@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Workshop Scenes</title>
+<meta name="theme-color" content="#13294b">
+<style>
+  /* Layout: one column. A large 3D stage you can turn, then the eight scenes as
+     tappable pictures, then the controls. Cream paper, navy ink, raised cards and
+     rimmed pill buttons. Colours, fonts and logo follow the Magicman brand guide:
+     Wasabi, Crow Black Blue and Lone Hunter. Verdana throughout, as the owner asked. */
+  :root {
+    --bg: #f6f4ef;
+    --surface-1: #fffefa;
+    --surface-2: #fbf7ef;
+    --sunken: #ece8df;
+    --ink: #13294b;
+    --ink-2: #4b5b6b;
+    --navy-1: #1f3d6b;
+    --navy-2: #13294b;
+    --navy-3: #081220;
+    --green: #aed284;
+    --green-ink: #4b5a39;
+    --logo-on-light: block;
+    --logo-on-dark: none;
+    --pass-bg: #dff0c8;
+    --pass-ink: #2f4a1a;
+    --hair: rgba(201, 151, 63, 0.4);
+    --rim-gold: linear-gradient(160deg, #fbe7b5, #c9973f 45%, #f4d791 70%, #9c6a22);
+    --rim-green: linear-gradient(160deg, #dff0c8, #93c847 45%, #aed284 70%, #4b5a39);
+    --rim: var(--rim-gold);
+    --rim-glow: rgba(201, 151, 63, 0.28);
+    --primary-ink: #fff3d6;
+    --shadow-warm: rgba(120, 90, 40, 0.16);
+    --gloss: linear-gradient(rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0));
+    --font: Verdana, Geneva, "DejaVu Sans", Tahoma, sans-serif;
+    --font-head: Verdana, Geneva, "DejaVu Sans", Tahoma, sans-serif;
+  }
+  :root { --rim: var(--rim-green); --rim-glow: rgba(110, 160, 70, 0.3); --hair: rgba(110, 160, 70, 0.45); --primary-ink: #f1f8e6; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1b24; --surface-1: #1c2f40; --surface-2: #162634; --sunken: #0c161e;
+      --ink: #e8eef3; --ink-2: #b4c1cc; --green-ink: #aed284; --logo-on-light: none; --logo-on-dark: block; --pass-bg: #24391a; --pass-ink: #cfeaae;
+      --shadow-warm: rgba(0, 0, 0, 0.45); --gloss: linear-gradient(rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0));
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1b24; --surface-1: #1c2f40; --surface-2: #162634; --sunken: #0c161e;
+    --ink: #e8eef3; --ink-2: #b4c1cc; --green-ink: #aed284; --logo-on-light: none; --logo-on-dark: block; --pass-bg: #24391a; --pass-ink: #cfeaae;
+    --shadow-warm: rgba(0, 0, 0, 0.45); --gloss: linear-gradient(rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0));
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+  body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.5; }
+  button, input { font: inherit; color: inherit; }
+  button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  :focus-visible { outline: 3px solid var(--navy-1); outline-offset: 3px; }
+
+  .wrap {
+    max-width: 780px; margin: 0 auto; padding-block: 22px 48px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    display: flex; flex-direction: column; gap: 18px;
+  }
+  header h1 { margin: 0; font-family: var(--font-head); font-weight: bold; font-size: 28px; line-height: 1.15; letter-spacing: -0.01em; text-wrap: balance; }
+  .logo { width: 190px; max-width: 60%; margin: 6px 0 22px; }
+  .logo img { width: 100%; height: auto; }
+  .logo .on-light { display: var(--logo-on-light); }
+  .logo .on-dark { display: var(--logo-on-dark); }
+  header p { margin: 6px 0 0; color: var(--ink-2); max-width: 60ch; }
+  .eyebrow { font-size: 12px; font-weight: bold; letter-spacing: 0.14em; text-transform: uppercase; color: var(--green-ink); }
+
+  .card {
+    background: linear-gradient(180deg, var(--surface-1), var(--surface-2));
+    border-radius: 22px; padding: 16px;
+    box-shadow: inset 0 0 0 1px var(--hair), inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 1px 2px rgba(90, 70, 30, 0.06), 0 10px 24px var(--shadow-warm);
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .card h2 { margin: 0; font-family: var(--font-head); font-weight: bold; font-size: 18px; }
+  .note { margin: 0; font-size: 14px; color: var(--ink-2); }
+
+  /* Stage */
+  .stage { position: relative; border-radius: 16px; overflow: hidden; background: #cfc9be; box-shadow: inset 0 0 0 1px rgba(19, 41, 75, 0.18); }
+  .stage canvas { display: block; width: 100%; aspect-ratio: 4 / 3; cursor: grab; }
+  .stage canvas:active { cursor: grabbing; }
+  .stage .cover { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .stage-label { position: absolute; left: 12px; top: 12px; background: rgba(12, 28, 53, 0.82); color: #fff; font-size: 13px; font-weight: bold; padding: 5px 12px; border-radius: 999px; }
+  .stage-hint { position: absolute; right: 12px; bottom: 12px; background: rgba(255, 255, 255, 0.86); color: #13294b; font-size: 12.5px; padding: 5px 12px; border-radius: 999px; }
+  .fail { padding: 28px 18px; text-align: center; color: #13294b; }
+  .zoomer { position: absolute; left: 12px; bottom: 12px; display: flex; gap: 8px; }
+  .zb {
+    width: 44px; height: 44px; border-radius: 50%; border: 2px solid transparent; padding: 0;
+    background: linear-gradient(180deg, #fffefa, #f3ecdd) padding-box, var(--rim) border-box;
+    color: #13294b; font: bold 22px/1 var(--font-head); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: transform 0.1s ease;
+  }
+  .zb:active { transform: translateY(1px) scale(0.96); }
+  .zb:disabled { opacity: 0.45; cursor: default; }
+
+  /* Rimmed pills */
+  .pill {
+    position: relative; isolation: isolate; border: 2px solid transparent; border-radius: 999px;
+    min-height: 46px; padding: 8px 18px; font-size: 15px; font-weight: 700; color: var(--ink);
+    background: linear-gradient(180deg, var(--surface-1), var(--surface-2)) padding-box, var(--rim) border-box;
+    box-shadow: 0 6px 14px var(--shadow-warm), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    transition: transform 0.1s ease, box-shadow 0.15s ease;
+  }
+  .pill::before { content: ""; position: absolute; z-index: -1; left: 7%; right: 7%; top: 2px; height: 42%; border-radius: 999px 999px 40% 40%; background: var(--gloss); pointer-events: none; }
+  .pill:active { transform: translateY(1px); box-shadow: 0 2px 6px var(--shadow-warm); }
+  .pill[aria-pressed="true"] {
+    color: var(--primary-ink); text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
+    background: linear-gradient(180deg, var(--navy-1) 0%, var(--navy-2) 55%, var(--navy-3) 100%) padding-box, var(--rim) border-box;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18), 0 8px 20px var(--rim-glow), 0 2px 4px rgba(10, 20, 40, 0.3);
+  }
+  .pill[aria-pressed="true"]::before { background: linear-gradient(rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.02)); }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; }
+  .pill.primary {
+    color: var(--primary-ink); text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
+    background: linear-gradient(180deg, var(--navy-1) 0%, var(--navy-2) 55%, var(--navy-3) 100%) padding-box, var(--rim) border-box;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18), 0 8px 20px var(--rim-glow), 0 2px 4px rgba(10, 20, 40, 0.3);
+  }
+  .pill.primary::before { background: linear-gradient(rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.02)); }
+
+  /* The job strip under the stage */
+  .job { display: flex; align-items: center; gap: 14px; }
+  .job-swatch {
+    flex: none; display: block; width: 54px; height: 54px; border-radius: 50%; border: 2px solid transparent;
+    background-clip: padding-box; outline: 2px solid var(--green); outline-offset: 1px;
+    box-shadow: inset 0 -6px 9px rgba(0, 0, 0, 0.25), inset 0 3px 5px rgba(255, 255, 255, 0.3), 0 6px 12px var(--shadow-warm);
+  }
+  .job-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .job-text strong { font-family: var(--font-head); font-size: 18px; line-height: 1.2; }
+  .job-text span { color: var(--ink-2); font-size: 15px; }
+  .job-count { flex: none; font-size: 13px; font-weight: 700; padding: 6px 12px; border-radius: 999px; background: var(--sunken); box-shadow: inset 0 2px 6px rgba(19, 41, 75, 0.12); font-variant-numeric: tabular-nums; }
+  .verdict { margin: 0; font-weight: 700; font-size: 15px; padding: 10px 14px; border-radius: 12px; }
+  .verdict.pass { background: var(--pass-bg); color: var(--pass-ink); }
+  .verdict.short { background: var(--sunken); color: var(--ink); }
+
+  /* Scene pictures */
+  .thumbs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+  .thumb {
+    border: 2px solid transparent; border-radius: 16px; padding: 0; overflow: hidden; text-align: left;
+    background: linear-gradient(180deg, var(--surface-1), var(--surface-2)) padding-box, var(--rim) border-box;
+    box-shadow: 0 6px 14px var(--shadow-warm); display: flex; flex-direction: column;
+    transition: transform 0.12s ease, box-shadow 0.15s ease;
+  }
+  .thumb img, .thumb .ph { display: block; width: 100%; aspect-ratio: 4 / 3; background: #cfc9be; object-fit: cover; }
+  .thumb span { padding: 7px 10px 9px; font-size: 13.5px; font-weight: 700; color: var(--ink); line-height: 1.3; }
+  .thumb span small { display: block; font-size: 11.5px; font-weight: 400; color: var(--ink-2); }
+  .thumb[aria-pressed="true"] { transform: translateY(-2px); box-shadow: 0 0 0 2px var(--navy-2), 0 12px 24px var(--rim-glow); }
+  @media (max-width: 620px) { .thumbs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+  /* Swatches */
+  .swatches { display: flex; flex-wrap: wrap; gap: 12px; }
+  .sw { display: flex; flex-direction: column; align-items: center; gap: 5px; width: 68px; border: 0; background: none; padding: 0; font-size: 11.5px; color: var(--ink-2); text-align: center; line-height: 1.25; }
+  .sw i {
+    display: block; width: 46px; height: 46px; border-radius: 50%; border: 2px solid transparent;
+    background: linear-gradient(var(--c), var(--c)) padding-box, var(--rim) border-box;
+    box-shadow: inset 0 -5px 8px rgba(0, 0, 0, 0.25), inset 0 3px 4px rgba(255, 255, 255, 0.3), 0 5px 10px var(--shadow-warm);
+    transition: transform 0.12s ease;
+  }
+  .sw[aria-pressed="true"] i { transform: translateY(-3px) scale(1.08); box-shadow: inset 0 -5px 8px rgba(0, 0, 0, 0.25), inset 0 3px 4px rgba(255, 255, 255, 0.3), 0 0 0 3px var(--bg), 0 0 0 5px var(--navy-1); }
+  .sw[aria-pressed="true"] { color: var(--ink); font-weight: bold; }
+
+  .slider-row { display: flex; align-items: center; gap: 14px; }
+  .slider-row input { flex: 1; min-width: 0; accent-color: var(--navy-1); height: 32px; }
+  .readout { min-width: 96px; text-align: center; font-weight: bold; font-size: 15px; padding: 8px 12px; border-radius: 12px; background: var(--sunken); box-shadow: inset 0 2px 6px rgba(19, 41, 75, 0.12); font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="logo"><img class="on-light" src="brand/logo.svg" alt="Magicman: repair, renew, restore"><img class="on-dark" src="brand/logo-white.svg" alt="Magicman: repair, renew, restore"></div>
+    <span class="eyebrow">Marv's Workshop</span>
+    <h1>Scene examples</h1>
+    <p>Fourteen scenes, two or three damage spots on each, and a target colour generated at random, so the supply of jobs never runs out. Drag a scene to turn it and pinch to zoom in on the repair.</p>
+  </header>
+
+  <div class="card">
+    <div class="stage">
+      <canvas id="stage" aria-label="3D scene. Drag left or right to turn it."></canvas>
+      <span class="stage-label" id="stage-label">Cruise ship bar</span>
+      <span class="stage-hint" id="stage-hint">Drag to turn, pinch to zoom</span>
+      <div class="zoomer" id="zoomer"><button class="zb" type="button" id="zoom-out" aria-label="Zoom out">&minus;</button><button class="zb" type="button" id="zoom-in" aria-label="Zoom in">+</button></div>
+      <p class="fail" id="fail" hidden>This browser could not start 3D graphics, so the scenes cannot be shown here.</p>
+    </div>
+    <div class="job">
+      <i class="job-swatch" id="job-swatch"></i>
+      <div class="job-text">
+        <strong id="job-title">Cruise ship bar</strong>
+        <span id="job-sub">Bar front, left</span>
+      </div>
+      <span class="job-count" id="job-count">Job 1</span>
+    </div>
+    <div class="row">
+      <button class="pill primary" type="button" id="new-job">New job</button>
+      <button class="pill" type="button" id="new-colour">New colour</button>
+    </div>
+    <p class="note">"New job" picks a scene, a damage spot and a target colour at random. The round disc is the target colour the technician has to match. The surface in the scene is painted in it, and the patch is their mix so far.</p>
+  </div>
+
+  <div class="card">
+    <h2>Level and pass mark</h2>
+    <div class="row" id="levels"></div>
+    <div class="slider-row">
+      <input type="range" id="match" min="0" max="100" value="35" aria-label="How close the mix is to the target">
+      <span class="readout" id="match-out">35% match</span>
+    </div>
+    <p class="verdict" id="verdict"></p>
+    <p class="note">The slider stands in for the player's mixing. The four levels are the ones from Colour Lab, and each pass mark comes from that level's tolerance there. They can be tuned.</p>
+  </div>
+
+  <div class="card">
+    <h2>Where is the damage?</h2>
+    <div class="row" id="spots"></div>
+    <p class="note">One scene gives several rounds by moving the damage. Zoom in and the view closes on the spot you picked.</p>
+  </div>
+
+  <div class="card">
+    <h2>The scenes</h2>
+    <div class="thumbs" id="thumbs"></div>
+  </div>
+</div>
+
+<script src="vendor/three.min.js"></script>
+<script src="vendor/RoundedBoxGeometry.js"></script>
+<script src="vendor/RoomEnvironment.js"></script>
+<script src="js/scenes.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+
+  // The four Colour Lab levels. Pass marks are Colour Lab's tolerances turned into a percentage.
+  var LEVELS = [
+    { id: "trainee", name: "Trainee", pass: 85 },
+    { id: "technician", name: "Technician", pass: 88 },
+    { id: "senior", name: "Senior Technician", pass: 92 },
+    { id: "master", name: "Master Technician", pass: 96 }
+  ];
+  // Where random target colours may fall for each scene: hue, saturation and lightness ranges.
+  var TONES = {
+    any:       { h: [0, 360],  s: [5, 52],  l: [16, 82] },
+    bar:       { h: [0, 360],  s: [28, 62], l: [14, 32] },
+    bath:      { h: [15, 210], s: [5, 30],  l: [72, 92] },
+    basin:     { h: [15, 210], s: [4, 26],  l: [76, 93] },
+    shower:    { h: [0, 360],  s: [0, 10],  l: [60, 92] },
+    stonecill: { h: [26, 50],  s: [10, 32], l: [52, 80] },
+    floor:     { h: [18, 60],  s: [4, 22],  l: [38, 76] },
+    cubicles:  { h: [0, 360],  s: [28, 62], l: [28, 58] },
+    frontdoor: { h: [0, 360],  s: [22, 66], l: [14, 44] },
+    window:    { h: [0, 360],  s: [2, 20],  l: [16, 78] },
+    garage:    { h: [0, 360],  s: [2, 24],  l: [16, 72] }
+  };
+  var state = { scene: "bar", spot: 0, colour: "#17443c", match: 35, level: "trainee", jobs: 1 };
+  var viewer = null;
+
+  function rnd(a, b) { return a + Math.random() * (b - a); }
+  function hexToRgb(h) { return [parseInt(h.substr(1, 2), 16), parseInt(h.substr(3, 2), 16), parseInt(h.substr(5, 2), 16)]; }
+  function rgbToHex(c) { return "#" + c.map(function (v) { return ("0" + Math.round(Math.max(0, Math.min(255, v))).toString(16)).slice(-2); }).join(""); }
+  function hslToHex(h, s, l) {
+    s /= 100; l /= 100;
+    var k = function (n) { return (n + h / 30) % 12; }, a = s * Math.min(l, 1 - l);
+    var f = function (n) { return 255 * (l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)))); };
+    return rgbToHex([f(0), f(8), f(4)]);
+  }
+  function randomColour(sceneId) {
+    var t = TONES[sceneId] || TONES.any;
+    return hslToHex(rnd(t.h[0], t.h[1]) % 360, rnd(t.s[0], t.s[1]), rnd(t.l[0], t.l[1]));
+  }
+  // A mix that starts visibly off and closes on the target as the slider rises.
+  function mixColour(target, pct) {
+    var t = hexToRgb(target);
+    var lum = (t[0] * 0.3 + t[1] * 0.59 + t[2] * 0.11) / 255;
+    var off = lum > 0.6 ? [t[0] - 70, t[1] - 58, t[2] - 40] : [t[0] + 78, t[1] + 82, t[2] + 70];
+    var k = pct / 100;
+    return rgbToHex([off[0] + (t[0] - off[0]) * k, off[1] + (t[1] - off[1]) * k, off[2] + (t[2] - off[2]) * k]);
+  }
+  function level() { return LEVELS.filter(function (l) { return l.id === state.level; })[0]; }
+  function meta(id) { return MarvScenes.list.filter(function (s) { return s.id === id; })[0]; }
+
+  function apply() {
+    if (!viewer) return;
+    viewer.setColour(state.colour);
+    viewer.setPatch(state.match >= 100 ? null : mixColour(state.colour, state.match));
+  }
+  function updateJob() {
+    $("job-swatch").style.background = state.colour;
+    $("job-title").textContent = meta(state.scene).name;
+    var labels = viewer ? viewer.spots() : [];
+    $("job-sub").textContent = labels[state.spot] || meta(state.scene).blurb;
+    $("job-count").textContent = "Job " + state.jobs;
+  }
+  function updateVerdict() {
+    var lv = level(), ok = state.match >= lv.pass;
+    $("match-out").textContent = state.match + "% match";
+    var v = $("verdict");
+    v.className = "verdict " + (ok ? "pass" : "short");
+    v.textContent = ok
+      ? "Passed at " + lv.name + " level. Like it never happened."
+      : lv.name + " needs " + lv.pass + "%. " + (lv.pass - state.match) + " points to go.";
+  }
+  function setMatch(n) {
+    state.match = n; $("match").value = String(n);
+    updateVerdict(); apply();
+  }
+  function renderSpots() {
+    var box = $("spots");
+    box.textContent = "";
+    viewer.spots().forEach(function (label, i) {
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "pill"; b.textContent = label;
+      b.setAttribute("aria-pressed", String(i === state.spot));
+      b.addEventListener("click", function () { setSpot(i); });
+      box.appendChild(b);
+    });
+  }
+  function setSpot(i) {
+    state.spot = i;
+    if (viewer) { viewer.setSpot(i); apply(); }
+    document.querySelectorAll("#spots .pill").forEach(function (o, n) { o.setAttribute("aria-pressed", String(n === i)); });
+    updateJob();
+  }
+  function syncZoom() {
+    if (!viewer) return;
+    var z = viewer.getZoom();
+    $("zoom-out").disabled = z <= 1.001;
+    $("zoom-in").disabled = z >= 3.39;
+  }
+  function showScene(id) {
+    state.scene = id; state.spot = 0;
+    $("stage-label").textContent = meta(id).name;
+    document.querySelectorAll("#thumbs .thumb").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.scene === id)); });
+    if (viewer) { viewer.show(id); apply(); renderSpots(); syncZoom(); }
+    updateJob();
+  }
+  function newColour() { state.colour = randomColour(state.scene); apply(); updateJob(); }
+  function newJob(sceneId) {
+    var list = MarvScenes.list;
+    var id = sceneId || list[Math.floor(Math.random() * list.length)].id;
+    if (!sceneId && list.length > 1) { while (id === state.scene) id = list[Math.floor(Math.random() * list.length)].id; }
+    state.jobs += 1;
+    state.colour = randomColour(id);
+    showScene(id);
+    if (viewer && !sceneId) setSpot(Math.floor(Math.random() * viewer.spots().length));
+    setMatch(Math.round(rnd(20, 55)));
+    updateJob();
+  }
+
+  // Controls
+  LEVELS.forEach(function (lv) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "pill"; b.textContent = lv.name;
+    b.setAttribute("aria-pressed", String(lv.id === state.level));
+    b.addEventListener("click", function () {
+      state.level = lv.id;
+      document.querySelectorAll("#levels .pill").forEach(function (o) { o.setAttribute("aria-pressed", String(o === b)); });
+      updateVerdict();
+    });
+    $("levels").appendChild(b);
+  });
+  MarvScenes.list.forEach(function (s) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "thumb"; b.dataset.scene = s.id;
+    b.setAttribute("aria-pressed", String(s.id === state.scene));
+    var ph = document.createElement("div"); ph.className = "ph";
+    var label = document.createElement("span"); label.textContent = s.name;
+    var area = document.createElement("small"); area.textContent = s.area; label.appendChild(area);
+    b.appendChild(ph); b.appendChild(label);
+    b.addEventListener("click", function () { newJob(s.id); window.scrollTo({ top: 0, behavior: "smooth" }); });
+    $("thumbs").appendChild(b);
+  });
+  $("match").addEventListener("input", function (e) { setMatch(parseInt(e.target.value, 10)); });
+  $("new-job").addEventListener("click", function () { newJob(); });
+  $("new-colour").addEventListener("click", newColour);
+  updateVerdict();
+
+  // 3D
+  try {
+    viewer = MarvScenes.createViewer($("stage"), { onZoom: function () { syncZoom(); } });
+  } catch (err) {
+    $("stage").hidden = true; $("stage-label").hidden = true; $("stage-hint").hidden = true; $("zoomer").hidden = true; $("fail").hidden = false;
+  }
+  if (viewer) {
+    viewer.resize();
+    // Show the opening scene, then hold a still of it over the stage while the grid pictures are taken.
+    showScene(state.scene);
+    var cover = new Image();
+    cover.className = "cover"; cover.alt = "";
+    cover.src = viewer.snapshot("image/jpeg", 0.9);
+    $("stage").parentNode.insertBefore(cover, $("stage-label"));
+    var queue = MarvScenes.list.slice();
+    (function next() {
+      var s = queue.shift();
+      if (!s) { showScene(state.scene); cover.remove(); return; }
+      viewer.show(s.id); viewer.setColour(s.sample); viewer.setPatch(null);
+      var img = new Image();
+      img.alt = "";
+      img.src = viewer.snapshot("image/jpeg", 0.8);
+      var b = document.querySelector('#thumbs .thumb[data-scene="' + s.id + '"]');
+      b.replaceChild(img, b.firstChild);
+      setTimeout(next, 30);
+    })();
+    window.addEventListener("resize", function () { viewer.resize(); });
+    $("zoom-in").addEventListener("click", function () { viewer.zoom(viewer.getZoom() * 1.45); syncZoom(); });
+    $("zoom-out").addEventListener("click", function () { viewer.zoom(viewer.getZoom() / 1.45); syncZoom(); });
+    $("stage").addEventListener("pointerdown", function () { $("stage-hint").hidden = true; }, { once: true });
+  } else {
+    updateJob();
+  }
+})();
+</script>
+</body>
+</html>
