@@ -95,6 +95,7 @@
   var spot = null;                 // the surface point to read
   var sample = null;               // a made-up sample: { base, truth, cast, taken }
   var drag = null, answer = null;  // answer: { target, fit } once a colour has been read
+  var spotAuto = false;            // true while the reading spot is the one the app chose
 
   // ── Loading a real photo ──
   function fit(w, h) { var k = Math.min(1, MAX_SIDE / Math.max(w, h)); return [Math.round(w * k), Math.round(h * k)]; }
@@ -107,8 +108,9 @@
     mode = m;
     document.querySelectorAll("#modes .pill").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.mode === m)); });
     card = m === "virtual" ? defaultCard() : { a: null, b: null };
-    spot = null; answer = null; $("result").hidden = true;
-    redraw(); guide();
+    spot = null; spotAuto = false; answer = null; $("result").hidden = true;
+    if (m === "virtual" && !sample) { spot = autoSpot(); spotAuto = !!spot; }
+    redraw(); guide(); compute();
   }
   function begin() {
     $("work").hidden = false; $("result").hidden = true; $("load-error").hidden = true;
@@ -225,8 +227,11 @@
   }
   $("btn-sample").addEventListener("click", makeSample);
   $("btn-shoot").addEventListener("click", function () {
-    sample.taken = true; spot = null; answer = null; $("result").hidden = true;
-    bake(); stage(); redraw(); guide();
+    sample.taken = true; answer = null; $("result").hidden = true;
+    bake();
+    spot = autoSpot(); spotAuto = !!spot;
+    stage(); redraw(); guide(); compute();
+    if (spot) $("result").scrollIntoView({ behavior: "smooth", block: "nearest" });
   });
   $("btn-retake").addEventListener("click", function () {
     sample.taken = false; spot = null; answer = null; $("result").hidden = true;
@@ -278,6 +283,7 @@
     if (mode === "virtual") {
       if (!cardLocked() && onCard(p)) drag = { kind: "card", ox: p.x - card.a.x, oy: p.y - card.a.y, len: { x: card.b.x - card.a.x, y: card.b.y - card.a.y } };
       else if (sample && !sample.taken) return;                      // the surface is picked after the photo
+      else if (onCard(p)) { $("guide").textContent = "That is the reference card. Tap the surface you want to match."; return; }
       else { spot = p; drag = { kind: "s" }; }
     } else {
       var hit = nearestMark(p);
@@ -299,19 +305,51 @@
     else card[drag.kind] = p;
     redraw();
   });
-  function drop() { if (!drag) return; drag = null; redraw(); guide(); compute(); }
+  function drop() {
+    if (!drag) return;
+    var kind = drag.kind; drag = null;
+    if (kind === "s") spotAuto = false;
+    else if (!(sample && !sample.taken) && (!spot || spotAuto) && card.a && card.b) { spot = autoSpot(); spotAuto = !!spot; }
+    redraw(); guide(); compute();
+  }
+  /* Choose where to read the surface. The card lies on the surface next to the damage,
+     so the app looks at patches along both sides of the card and takes the most even
+     one, passing over glare, deep shadow and anything off the edge of the picture. */
+  function autoSpot() {
+    if (!(card.a && card.b)) return null;
+    var ax = card.a.x, ay = card.a.y, bx = card.b.x, by = card.b.y, len = Math.hypot(bx - ax, by - ay);
+    if (len < 20) return null;
+    var nx = -(by - ay) / len, ny = (bx - ax) / len, pitch = len / (K.CARD.patches.length + 1);
+    var size = Math.round(surfaceSize() * 1.5), best = null;
+    [-1, 1].forEach(function (side) {
+      [1.9, 2.8].forEach(function (far) {
+        [0.15, 0.3, 0.45, 0.6, 0.75, 0.9].forEach(function (t) {
+          var x = ax + (bx - ax) * t + nx * pitch * far * side, y = ay + (by - ay) * t + ny * pitch * far * side;
+          if (x < size || y < size || x > photo.width - size || y > photo.height - size) return;
+          var d = pctx.getImageData(Math.round(x - size / 2), Math.round(y - size / 2), size, size).data, n = 0, sum = 0, sq = 0;
+          for (var i = 0; i < d.length; i += 16) { var l = 0.3 * d[i] + 0.59 * d[i + 1] + 0.11 * d[i + 2]; sum += l; sq += l * l; n++; }
+          var mean = sum / n, sd = Math.sqrt(Math.max(0, sq / n - mean * mean));
+          if (mean < 16 || mean > 246) return;
+          var score = sd + (far > 2 ? 0.6 : 0);            // prefer the nearer row when it is just as even
+          if (!best || score < best.score) best = { x: x, y: y, score: score };
+        });
+      });
+    });
+    return best ? { x: best.x, y: best.y } : null;
+  }
   overlay.addEventListener("pointerup", drop);
   overlay.addEventListener("pointercancel", drop);
 
   function guide() {
     var g = $("guide");
     if (sample && !sample.taken) g.textContent = "Slide the reference card next to the damage, then take the photo.";
-    else if (sample) g.textContent = spot ? "Drag the square to adjust. The colour updates when you let go." : "The photo is taken. Tap the surface you want to match.";
-    else if (mode === "virtual") g.textContent = spot ? "Drag the square to adjust. The colour updates when you let go." : "Tap the surface you want to match, close to the damage.";
+    else if (spot && spotAuto) g.textContent = "The app read an even patch of the surface beside the card, marked by the square. Tap somewhere else if that is the wrong surface.";
+    else if (sample) g.textContent = spot ? "Reading from the square you placed. Tap somewhere else to move it." : "The photo is taken. Tap the surface you want to match.";
+    else if (mode === "virtual") g.textContent = spot ? "Reading from the square you placed. Tap somewhere else to move it." : "Tap the surface you want to match, close to the damage.";
     else if (!card.a) g.textContent = "Tap the dot at one end of the printed card.";
     else if (!card.b) g.textContent = "Now tap the dot at the other end.";
     else if (!spot) g.textContent = "Tap the surface you want to match, close to the damage.";
-    else g.textContent = "Drag any mark to adjust it. The colour updates when you let go.";
+    else g.textContent = "Reading from the square you placed. Drag any mark to adjust it.";
   }
   function redraw() {
     var w = overlay.width, h = overlay.height, u = Math.max(2, w / 400);
