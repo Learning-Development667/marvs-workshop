@@ -24,6 +24,8 @@
   --pass-ink: #2f4a1a;
   --warn-bg: #fbf0d9;
   --warn-ink: #6b4a08;
+  --stop-bg: #f8e1de;
+  --stop-ink: #8a2a1c;
   --logo-on-light: block;
   --logo-on-dark: none;
   --font: Verdana, Geneva, "DejaVu Sans", Tahoma, sans-serif;
@@ -33,7 +35,7 @@
     --bg: #0f1b24; --surface-1: #1c2f40; --surface-2: #162634; --sunken: #0c161e;
     --ink: #e8eef3; --ink-2: #b4c1cc; --green-ink: #aed284;
     --shadow-warm: rgba(0, 0, 0, 0.45); --gloss: linear-gradient(rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0));
-    --pass-bg: #24391a; --pass-ink: #cfeaae; --warn-bg: #3a2e14; --warn-ink: #f0cc80;
+    --pass-bg: #24391a; --pass-ink: #cfeaae; --warn-bg: #3a2e14; --warn-ink: #f0cc80; --stop-bg: #42211b; --stop-ink: #f6aa9c;
     --logo-on-light: none; --logo-on-dark: block;
     color-scheme: dark;
   }
@@ -42,7 +44,7 @@
   --bg: #0f1b24; --surface-1: #1c2f40; --surface-2: #162634; --sunken: #0c161e;
   --ink: #e8eef3; --ink-2: #b4c1cc; --green-ink: #aed284;
   --shadow-warm: rgba(0, 0, 0, 0.45); --gloss: linear-gradient(rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0));
-  --pass-bg: #24391a; --pass-ink: #cfeaae; --warn-bg: #3a2e14; --warn-ink: #f0cc80;
+  --pass-bg: #24391a; --pass-ink: #cfeaae; --warn-bg: #3a2e14; --warn-ink: #f0cc80; --stop-bg: #42211b; --stop-ink: #f6aa9c;
   --logo-on-light: none; --logo-on-dark: block;
   color-scheme: dark;
 }
@@ -109,3 +111,7 @@ header p { margin: 6px 0 0; color: var(--ink-2); max-width: 60ch; }
 .banner.pass { background: var(--pass-bg); color: var(--pass-ink); }
 .banner.warn { background: var(--warn-bg); color: var(--warn-ink); }
 .banner.plain { background: var(--sunken); color: var(--ink); }
+
+/* Way back to the landing screen */
+.back { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: bold; color: var(--ink-2); text-decoration: none; margin-bottom: 10px; min-height: 40px; }
+.back svg { width: 18px; height: 18px; }

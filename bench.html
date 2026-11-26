@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#13294b">
+<title>Tint measurements</title>
+<link rel="stylesheet" href="css/workshop.css">
+<link rel="stylesheet" href="css/bench.css">
+</head>
+<body>
+<div class="app">
+  <header class="wrap">
+    <a class="back" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Workshop</a>
+    <div class="logo"><img class="on-light" src="brand/logo.svg" alt="Magicman: repair, renew, restore"><img class="on-dark" src="brand/logo-white.svg" alt="Magicman: repair, renew, restore"></div>
+    <span class="eyebrow">Tint measurements</span>
+    <h1 id="hero-title">Scale a mix</h1>
+    <p id="hero-sub">Any recipe, any batch size.</p>
+  </header>
+
+  <main class="wrap">
+
+    <!-- ═══ SCALE A MIX ═══ -->
+    <section class="panel" id="panel-scale" role="tabpanel" aria-labelledby="tab-scale">
+
+      <div class="card">
+        <h2>The recipe you were sent <span class="tag" id="example-note">Made-up example</span></h2>
+        <div class="makes">
+          <label class="label" for="recipe-qty">This recipe makes</label>
+          <div class="inwell"><input id="recipe-qty" type="number" inputmode="decimal" min="1" step="any" value="250"><span>ml</span></div>
+        </div>
+        <div class="rows" id="rows"></div>
+        <div class="link-row">
+          <button class="ghost" id="add-row" type="button">+ Add tinter</button>
+          <button class="ghost" id="load-example" type="button">Load example</button>
+          <button class="ghost" id="clear-rows" type="button">Clear</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>This job</h2>
+        <span class="label" id="need-label">I need</span>
+        <div class="stepper">
+          <button class="step" id="need-minus" type="button" aria-label="Less">&minus;</button>
+          <div class="qty">
+            <input id="need-qty" type="number" inputmode="decimal" min="1" step="any" value="50" aria-labelledby="need-label">
+            <span>ml</span>
+          </div>
+          <button class="step" id="need-plus" type="button" aria-label="More">+</button>
+        </div>
+        <div class="chips" id="need-chips">
+          <button class="chip" type="button" data-need="25">25</button>
+          <button class="chip" type="button" data-need="50">50</button>
+          <button class="chip" type="button" data-need="100">100</button>
+          <button class="chip" type="button" data-need="250">250</button>
+          <button class="chip" type="button" data-need="500">500</button>
+          <button class="chip" type="button" data-need="1000">1 L</button>
+        </div>
+        <span class="label" id="res-label">My scale reads to</span>
+        <div class="seg" id="res-chips" role="group" aria-labelledby="res-label">
+          <button type="button" data-res="1">1 g</button>
+          <button type="button" data-res="0.1">0.1 g</button>
+          <button type="button" data-res="0.01">0.01 g</button>
+        </div>
+      </div>
+
+      <div id="verdict" aria-live="polite"></div>
+
+      <div class="bench" id="result-card">
+        <h2 id="result-title">Your mix</h2>
+        <div class="mixbar-wrap" id="mixbar-wrap" hidden>
+          <div class="mixbar" id="mixbar"></div>
+          <small>Each tinter's share of the mix, by weight</small>
+        </div>
+        <div class="lines" id="lines"></div>
+      </div>
+
+      <details>
+        <summary>How the Bench decides</summary>
+        <ul>
+          <li>A scale can be out by half its smallest step. To keep that error under about 5%, each tinter must weigh at least ten steps: 10 g on a 1 g scale, 1 g on a 0.1 g scale.</li>
+          <li>Anything lighter is converted to millilitres using the density printed on the tin, for a syringe. Below 0.10 ml a 1 ml syringe is not accurate enough either.</li>
+          <li>Tinters are thick and some stays in the syringe. Use the same technique every time.</li>
+          <li>Most van scales read to 1 g, so that is the starting setting. Change it if yours reads finer.</li>
+          <li>Syringe sizes and the 0.10 ml limit are working assumptions until we confirm what technicians carry.</li>
+          <li>The example recipe uses invented numbers. It is not a real formulation.</li>
+        </ul>
+      </details>
+    </section>
+
+    <!-- ═══ FIX A MIX ═══ -->
+    <section class="panel" id="panel-fix" role="tabpanel" aria-labelledby="tab-fix" hidden>
+
+      <div class="card">
+        <h2>What are you mixing?</h2>
+        <div class="chips" id="family-chips">
+          <button class="chip" type="button" data-family="lightgrey">Light grey</button>
+          <button class="chip" type="button" data-family="darkgrey">Dark grey</button>
+          <button class="chip" type="button" data-family="green">Green</button>
+          <button class="chip" type="button" data-family="other">Something else</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Next to the target, your mix is</h2>
+        <div class="grid2" id="problem-grid">
+          <button class="big-btn" type="button" data-problem="light"><span class="pot cue-light"></span>Too light</button>
+          <button class="big-btn" type="button" data-problem="dark"><span class="pot cue-dark"></span>Too dark</button>
+          <button class="big-btn" type="button" data-problem="red"><span class="pot cue-red"></span>Too red</button>
+          <button class="big-btn" type="button" data-problem="green"><span class="pot cue-green"></span>Too green</button>
+          <button class="big-btn" type="button" data-problem="yellow"><span class="pot cue-yellow"></span>Too yellow</button>
+          <button class="big-btn" type="button" data-problem="blue"><span class="pot cue-blue"></span>Too blue</button>
+          <button class="big-btn" type="button" data-problem="bright"><span class="pot cue-bright"></span>Too bright</button>
+          <button class="big-btn" type="button" data-problem="dull"><span class="pot cue-dull"></span>Too dull</button>
+        </div>
+      </div>
+
+      <div class="coach" id="coach-card" aria-live="polite"></div>
+
+      <div class="card">
+        <h2>Every time</h2>
+        <ol class="steps">
+          <li><span>Make one change at a time.</span></li>
+          <li><span>Stir fully before you judge it.</span></li>
+          <li><span>Dab it next to the target and check it once it is dry.</span></li>
+          <li><span>Note what you added. The next job in this colour starts there.</span></li>
+        </ol>
+      </div>
+
+      <p class="draft"><strong>Draft guidance.</strong> Built from the notes on the tin labels and standard colour practice. Technical has not signed it off yet. It assumes the eleven tinters listed under Tinters.</p>
+    </section>
+
+    <!-- ═══ TINTERS ═══ -->
+    <section class="panel" id="panel-tinters" role="tabpanel" aria-labelledby="tab-tinters" hidden>
+      <div class="card">
+        <h2>The eleven tinters</h2>
+        <div id="tinter-list"></div>
+      </div>
+      <p class="hint">Vans carry either the old or the new tint system. Which one these eleven belong to is still to be confirmed. Codes, material numbers and densities are from the tin labels. The coloured pots are for finding the tin, not for judging colour. Strength for the two Phthalos and the two oxides comes from the feasibility report. The other strength ratings are a draft for Technical to confirm.</p>
+    </section>
+
+    <p class="foot">Marv's Workshop</p>
+  </main>
+</div>
+
+<nav class="dock" aria-label="Tools">
+  <div class="dock-in" role="tablist">
+    <button role="tab" id="tab-scale" aria-controls="panel-scale" aria-selected="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v16M7 20h10M5 7h14M5 7l-2.6 6a2.9 2.9 0 0 0 5.2 0L5 7zM19 7l-2.6 6a2.9 2.9 0 0 0 5.2 0L19 7z"/></svg>
+      Scale a mix
+    </button>
+    <button role="tab" id="tab-fix" aria-controls="panel-fix" aria-selected="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3s6 6.3 6 10.6a6 6 0 0 1-12 0C6 9.3 12 3 12 3z"/><path d="M12 11v5M9.5 13.5h5"/></svg>
+      Fix a mix
+    </button>
+    <button role="tab" id="tab-tinters" aria-controls="panel-tinters" aria-selected="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="8" r="3.4"/><circle cx="17" cy="8" r="3.4"/><circle cx="12" cy="16.6" r="3.4"/></svg>
+      Tinters
+    </button>
+  </div>
+</nav>
+
+<script>
+(function () {
+  "use strict";
+
+  // ── Tinter data: Chroma-Chem 844, from the tin labels (report Appendix A) ──
+  var TINTERS = [
+    { id: "OYX", name: "Organic Yellow",       code: "844-2852 OYX", mat: "11000817", density: 1101, group: "Yellows and golds",            strength: "medium", dot: "#f2c417", note: "Clean, bright yellow." },
+    { id: "MYX", name: "LF Medium Yellow",     code: "844-2565 MYX", mat: "11000169", density: 1190, group: "Yellows and golds",            strength: "medium", dot: "#f0a81c", note: "Clean yellow, a little warmer." },
+    { id: "YOX", name: "Yellow Oxide",         code: "844-1871 YOX", mat: "11000160", density: 1643, group: "Yellows, browns and earths",   strength: "gentle", dot: "#c8962e", note: "Bridges the yellows and the earths. With Red Oxide it makes sandy ochres." },
+    { id: "QRX", name: "Quinacridone Red",     code: "844-0461 QRX", mat: "11000129", density: 1042, group: "Reds and pinks",               strength: "medium", dot: "#c2264b", note: "Clean red." },
+    { id: "ROX", name: "Red Oxide",            code: "844-1071 ROX", mat: "11000144", density: 1955, group: "Reds, browns and earths",      strength: "gentle", dot: "#8e3b26", note: "Earthy red. Two tins in stock, density 1955 and 1953." },
+    { id: "BUX", name: "Burnt Umber",          code: "844-1362 BUX", mat: "11000151", density: 1406, group: "Browns and earths",            strength: "medium", dot: "#5b3a25", note: "Neutralises and warms other colours. With Phthalo Green it makes natural muted greens." },
+    { id: "PBX", name: "Phthalo Blue",         code: "844-7272 PBX", mat: "11000196", density: 1039, group: "Blues, teals and neutrals",    strength: "vstrong", dot: "#17479e", note: "The only blue on the van. With Phthalo Green it makes teal." },
+    { id: "PGX", name: "Phthalo Green",        code: "844-5568 PGX", mat: "99003584 / 11000184", density: 1068, group: "Greens, blues and teals", strength: "vstrong", dot: "#0f7a57", note: "Two tins in stock, density 1068 and 1066." },
+    { id: "QVX", name: "Quinacridone Violet",  code: "844-9461 QVX", mat: "11000203", density: 1047, group: "Purples and mauves",           strength: "medium", dot: "#6d2a7c", note: "The only violet on the van." },
+    { id: "LBX", name: "Lamp Black",           code: "844-9965 LBX", mat: "11000218", density: 1070, group: "Value adjusters",              strength: "vstrong", dot: "#1c1c1e", note: "With Phthalo Blue and Titanium White it makes blue-greys." },
+    { id: "TWX", name: "Titanium White",       code: "844-0071 TWX", mat: "11000121", density: 1898, group: "Value adjusters",              strength: "gentle", dot: "#f4f4f1", note: "The main lightener for every colour group." }
+  ];
+  var T = {};
+  TINTERS.forEach(function (t) { T[t.id] = t; });
+
+  var STRENGTH = {
+    vstrong: { label: "Very strong", cls: "stop", how: "The smallest touch you can manage, then check." },
+    medium:  { label: "Medium",      cls: "warn", how: "Add a drop at a time." },
+    gentle:  { label: "Gentle",      cls: "ok",   how: "Needs more than you expect to shift the colour." }
+  };
+
+  var ICONS = {
+    ok:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+    warn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 6v8"/><path d="M12 18.2v.1"/></svg>',
+    stop: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10"/><path d="M17 7L7 17"/></svg>'
+  };
+
+  var HERO = {
+    scale:   { title: "Scale a mix", sub: "Any recipe, any batch size." },
+    fix:     { title: "Fix a mix",   sub: "Tell MARV what looks off." },
+    tinters: { title: "Tinters",     sub: "The eleven tins at a glance." }
+  };
+
+  var SYRINGE_MIN_ML = 0.10;
+  var SYRINGES = [1, 3, 5, 10, 20];
+  var MAX_TYPICAL_ML = 1000;   // largest batch HQ normally issues a recipe for
+  var FINER_SCALES = [0.1, 0.01];
+
+  var EXAMPLE = {
+    recipeQty: 250,
+    rows: [
+      { t: "TWX", g: 11 },
+      { t: "LBX", g: 7 },
+      { t: "BUX", g: 1.6 },
+      { t: "PBX", g: 0.8 }
+    ]
+  };
+
+  var state = {
+    recipeQty: EXAMPLE.recipeQty,
+    need: 50,
+    res: 1,
+    rows: EXAMPLE.rows.map(function (r) { return { t: r.t, g: r.g }; }),
+    isExample: true,
+    family: "lightgrey",
+    problem: null
+  };
+
+  var $ = function (id) { return document.getElementById(id); };
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+  function pot(color, cls) {
+    var p = el("span", "pot" + (cls ? " " + cls : ""));
+    p.style.backgroundColor = color;
+    return p;
+  }
+
+  // ── Number formatting ──
+  function fmtQty(ml) {
+    if (ml >= 1000) {
+      var l = ml / 1000;
+      return (Math.abs(l - Math.round(l)) < 1e-9 ? l.toFixed(0) : l.toFixed(1)) + " L";
+    }
+    return Math.round(ml) + " ml";
+  }
+  function roundUpNice(ml) {
+    var step = ml <= 1000 ? 5 : 100;
+    return Math.ceil(ml / step - 1e-9) * step;
+  }
+  function resDecimals(res) { return res >= 1 ? 0 : res >= 0.1 ? 1 : 2; }
+  function fmtSmallG(g) { return g < 0.1 ? g.toFixed(3) : g.toFixed(2); }
+
+  // ── The scaling maths ──
+  function calc() {
+    var rows = state.rows.filter(function (r) { return r.g > 0 && T[r.t]; });
+    if (!(state.recipeQty > 0) || !(state.need > 0) || rows.length === 0) return null;
+    var f = state.need / state.recipeQty;
+    var thr = state.res * 10;
+    var weighFactor = 0, syringeFactor = 0;
+    var lines = rows.map(function (r) {
+      var t = T[r.t];
+      var gPerMl = t.density / 1000;
+      var g = r.g * f;
+      var ml = g / gPerMl;
+      var method = g >= thr - 1e-9 ? "weigh" : (ml >= SYRINGE_MIN_ML - 1e-9 ? "syringe" : "small");
+      weighFactor = Math.max(weighFactor, thr / r.g);
+      syringeFactor = Math.max(syringeFactor, Math.min(thr, SYRINGE_MIN_ML * gPerMl) / r.g);
+      var syringe = null;
+      if (method === "syringe") {
+        for (var i = 0; i < SYRINGES.length; i++) { if (SYRINGES[i] >= ml - 1e-9) { syringe = SYRINGES[i]; break; } }
+        if (syringe === null) syringe = SYRINGES[SYRINGES.length - 1];
+      }
+      return { t: t, g: g, ml: ml, method: method, syringe: syringe, stockOk: g * 10 >= thr - 1e-9 };
+    });
+    var minG = Math.min.apply(null, lines.map(function (l) { return l.g; }));
+    var finerRes = null;
+    FINER_SCALES.forEach(function (r) {
+      if (finerRes === null && r < state.res && minG >= r * 10 - 1e-9) finerRes = r;
+    });
+    return {
+      lines: lines,
+      thr: thr,
+      finerRes: finerRes,
+      weighMin: roundUpNice(state.recipeQty * weighFactor),
+      syringeMin: roundUpNice(state.recipeQty * syringeFactor)
+    };
+  }
+
+  // ── Recipe rows ──
+  function renderRows() {
+    var box = $("rows");
+    box.textContent = "";
+    state.rows.forEach(function (r, i) {
+      var row = el("div", "row");
+      var p = pot(T[r.t] ? T[r.t].dot : "transparent");
+
+      var sel = el("select", "pick");
+      sel.id = "row-t-" + i;
+      sel.setAttribute("aria-label", "Tinter " + (i + 1));
+      TINTERS.forEach(function (t) {
+        var o = el("option", null, t.name);
+        o.value = t.id;
+        if (t.id === r.t) o.selected = true;
+        sel.appendChild(o);
+      });
+      sel.addEventListener("change", function () { r.t = sel.value; p.style.backgroundColor = T[r.t].dot; touched(); renderResults(); });
+
+      var well = el("div", "inwell");
+      var inp = el("input");
+      inp.id = "row-g-" + i;
+      inp.type = "number";
+      inp.inputMode = "decimal";
+      inp.min = "0";
+      inp.step = "any";
+      inp.value = r.g > 0 ? String(r.g) : "";
+      inp.placeholder = "0";
+      inp.setAttribute("aria-label", "Grams of tinter " + (i + 1));
+      inp.addEventListener("input", function () { r.g = parseFloat(inp.value) || 0; touched(); renderResults(); });
+      well.appendChild(inp);
+      well.appendChild(el("span", null, "g"));
+
+      var del = el("button", "icon-btn", "×");
+      del.type = "button";
+      del.setAttribute("aria-label", "Remove tinter " + (i + 1));
+      del.addEventListener("click", function () { state.rows.splice(i, 1); touched(); renderRows(); renderResults(); });
+
+      row.appendChild(p); row.appendChild(sel); row.appendChild(well); row.appendChild(del);
+      box.appendChild(row);
+    });
+    if (state.rows.length === 0) {
+      box.appendChild(el("p", "hint", "No tinters yet. Add the tinters and weights from the recipe HQ sent you."));
+    }
+  }
+  function touched() { state.isExample = false; $("example-note").hidden = true; }
+
+  // ── Results ──
+  function renderResults() {
+    var c = calc();
+    var verdict = $("verdict");
+    var lines = $("lines");
+    var bar = $("mixbar");
+    verdict.textContent = "";
+    lines.textContent = "";
+    bar.textContent = "";
+
+    document.querySelectorAll("#need-chips .chip").forEach(function (b) {
+      b.setAttribute("aria-pressed", String(parseFloat(b.dataset.need) === state.need));
+    });
+    document.querySelectorAll("#res-chips button").forEach(function (b) {
+      b.setAttribute("aria-pressed", String(parseFloat(b.dataset.res) === state.res));
+    });
+
+    if (!c) {
+      $("result-title").textContent = "Your mix";
+      $("mixbar-wrap").hidden = true;
+      lines.appendChild(el("p", "why", "Enter the recipe and the amount you need. The weights appear here."));
+      return;
+    }
+    $("result-title").textContent = "Your mix for " + fmtQty(state.need);
+    $("mixbar-wrap").hidden = false;
+    c.lines.forEach(function (l) {
+      var seg = el("i");
+      seg.style.flexGrow = String(l.g);
+      seg.style.flexBasis = "0";
+      seg.style.backgroundColor = l.t.dot;
+      seg.title = l.t.name;
+      bar.appendChild(seg);
+    });
+
+    var nSyr = c.lines.filter(function (l) { return l.method === "syringe"; }).length;
+    var nSmall = c.lines.filter(function (l) { return l.method === "small"; }).length;
+    var scaleName = state.res + " g scale";
+    var kind, headText, bodyText, actions = [];
+    var bigBatchOk = c.weighMin <= MAX_TYPICAL_ML;
+    var finer = c.finerRes ? " A scale that reads to " + c.finerRes + " g could weigh every tinter at this size." : "";
+
+    if (nSyr === 0 && nSmall === 0) {
+      kind = "ok";
+      headText = "Good to weigh";
+      bodyText = "Every tinter is heavy enough for a " + scaleName + ".";
+    } else if (nSmall === 0) {
+      kind = "warn";
+      headText = nSyr + (nSyr === 1 ? " tinter is" : " tinters are") + " too light to weigh at this size";
+      bodyText = "Measure " + (nSyr === 1 ? "it" : "them") + " by syringe" +
+        (bigBatchOk ? ", or make " + fmtQty(c.weighMin) + " and weigh everything on a " + scaleName + "." : ".") + finer;
+      if (bigBatchOk) actions.push(c.weighMin);
+    } else {
+      kind = "stop";
+      headText = nSmall + (nSmall === 1 ? " tinter is" : " tinters are") + " too small to measure at this size";
+      bodyText = c.weighMin === c.syringeMin
+        ? "The smallest batch you can measure properly is " + fmtQty(c.syringeMin) + "."
+        : "The smallest batch that works with a syringe is " + fmtQty(c.syringeMin) + "." +
+          (bigBatchOk ? " To weigh everything on a " + scaleName + ", make " + fmtQty(c.weighMin) + "." : "") + finer;
+      actions.push(c.syringeMin);
+      if (bigBatchOk && c.weighMin !== c.syringeMin) actions.push(c.weighMin);
+    }
+    var box = el("div", "verdict " + kind);
+    var icon = el("div", "icon");
+    icon.innerHTML = ICONS[kind];
+    var body = el("div", "body");
+    body.appendChild(el("strong", null, headText));
+    body.appendChild(el("p", null, bodyText));
+    if (actions.length) {
+      var ar = el("div", "link-row");
+      actions.forEach(function (ml, i) {
+        var b = el("button", i === 0 ? "cta" : "ghost", "Make " + fmtQty(ml) + " instead");
+        b.type = "button";
+        b.addEventListener("click", function () { setNeed(ml); });
+        ar.appendChild(b);
+      });
+      body.appendChild(ar);
+    }
+    box.appendChild(icon); box.appendChild(body);
+    verdict.appendChild(box);
+
+    var dp = resDecimals(state.res);
+    c.lines.forEach(function (l, idx) {
+      var line = el("div", "line");
+      line.style.animationDelay = (idx * 45) + "ms";
+      var info = el("div", "info");
+      info.appendChild(el("span", "name", l.t.name));
+      info.appendChild(el("span", "code", l.t.code));
+      var readout = el("div", "readout");
+      var why = null;
+
+      function setReadout(value, unit) {
+        readout.textContent = value;
+        readout.appendChild(el("span", null, unit));
+      }
+
+      if (l.method === "weigh") {
+        setReadout(l.g.toFixed(dp), "g");
+        info.appendChild(el("span", "pill ok", "Weigh"));
+      } else if (l.method === "syringe") {
+        setReadout(l.ml.toFixed(l.syringe === 1 ? 2 : 1), "ml");
+        info.appendChild(el("span", "pill warn", l.syringe + " ml syringe"));
+        why = el("p", "why", "That is " + fmtSmallG(l.g) + " g, too light for a " + scaleName + " to weigh reliably.");
+      } else {
+        setReadout(fmtSmallG(l.g), "g");
+        info.appendChild(el("span", "pill stop", "Too small"));
+        var msg = "That is " + l.ml.toFixed(3) + " ml, too little for a scale or a syringe.";
+        if (l.stockOk) {
+          msg += " As a 1 to 9 stock tint it becomes " + (l.g * 10).toFixed(dp) + " g, which this scale can weigh. Stock tints need Technical sign-off first.";
+        } else {
+          msg += " Make a bigger batch.";
+        }
+        why = el("p", "why", msg);
+      }
+      line.appendChild(pot(l.t.dot, "lg")); line.appendChild(info); line.appendChild(readout);
+      if (why) line.appendChild(why);
+      lines.appendChild(line);
+    });
+    lines.appendChild(el("div", "binder", "Then add binder to bring it up to " + fmtQty(state.need) + "."));
+  }
+
+  function setNeed(ml) {
+    state.need = ml;
+    $("need-qty").value = String(ml);
+    renderResults();
+  }
+  function stepFor(v) { return v < 50 ? 5 : v < 100 ? 10 : v < 250 ? 25 : v < 1000 ? 50 : 100; }
+  function nudge(dir) {
+    var v = state.need > 0 ? state.need : 0;
+    var next;
+    if (dir > 0) { var s = stepFor(v); next = Math.floor(v / s + 1e-9) * s + s; }
+    else { var s2 = stepFor(v - 0.001); next = Math.ceil(v / s2 - 1e-9) * s2 - s2; }
+    setNeed(Math.max(5, Math.min(5000, next)));
+  }
+
+  // ── Coach rules (draft, pending Technical sign-off) ──
+  var GREYS = { lightgrey: true, darkgrey: true };
+  function advice(family, problem) {
+    var grey = !!GREYS[family], green = family === "green";
+    switch (problem) {
+      case "light":
+        if (green) return { head: "Deepen it with Phthalo Green", first: ["PGX", "Deepens a green without greying it."], second: ["LBX", "Darkens faster, but it also dulls a green."] };
+        return { head: "Darken it with Lamp Black", first: ["LBX", family === "lightgrey" ? "On a light grey a trace of black goes a long way." : "Darkens quickly."], note: "If the colour looks weak, not just pale, add more of the recipe's main tinter before reaching for black." };
+      case "dark":
+        return { head: "Lighten it with Titanium White", first: ["TWX", "The main lightener for every colour group."], note: "White can leave a colour looking chalkier and cooler. Check the tone again after lightening." };
+      case "red":
+        return { head: "Cancel the red with Phthalo Green", first: ["PGX", "Green cancels red."], note: grey ? "A pink cast in a grey needs very little green to clear." : null };
+      case "green":
+        if (green) return { head: "Calm it with Burnt Umber", first: ["BUX", "Takes a green toward a natural, muted tone."], second: ["ROX", "Red cancels green. Gentle, so easy to control."] };
+        if (grey) return { head: "Cancel the green with Red Oxide", first: ["ROX", "Red cancels green. Gentle, so easy to control in a grey."], second: ["QRX", "Cleaner and stronger. Use it if Red Oxide is turning the grey brown."] };
+        return { head: "Cancel the green with Quinacridone Red", first: ["QRX", "Red cancels green, and this is the clean red."], second: ["ROX", "Gentler and earthier. Easier to control in a small batch."] };
+      case "yellow":
+        if (green) return { head: "Pull it back with Phthalo Blue", first: ["PBX", "Takes a yellow-green back toward blue."], second: ["PGX", "Adds green without pushing as far toward blue."] };
+        return { head: "Cancel the yellow with Quinacridone Violet", first: ["QVX", "Violet cancels yellow."], second: grey ? ["PBX", "A trace cools a warm grey."] : null };
+      case "blue":
+        if (green) return { head: "Bring it back with Organic Yellow", first: ["OYX", "Clean yellow takes a blue-green back toward green."], second: ["YOX", "Use this one for muted, natural greens."] };
+        return { head: "Warm it with Burnt Umber", first: ["BUX", "Warms and neutralises a cool colour."], second: ["YOX", "A gentler warm shift. Pair it with Red Oxide for a sandy tone."] };
+      case "bright":
+        return { head: "Knock it back with Burnt Umber", first: ["BUX", green ? "Makes a natural, muted green." : "Neutralises and warms other colours."], second: ["LBX", "Greys the colour down and darkens it at the same time."], note: grey ? "On a grey, name the cast if you can see one: too blue, too green, too red or too yellow." : null };
+      case "dull":
+        return { head: "You can't take dullness out", plain: "Nothing on the van removes it. Add more of the clean tinter that carries the colour to lift it. If it is a long way off, start again, and make a batch big enough to measure properly.", list: ["OYX", "QRX", "PBX", "PGX", "QVX"], sprite: "brand/marv/wincing.jpg" };
+    }
+    return null;
+  }
+
+  function strengthPill(t) {
+    var s = STRENGTH[t.strength];
+    return el("span", "pill " + s.cls, s.label);
+  }
+  function optionBlock(label, pair) {
+    var t = T[pair[0]];
+    var box = el("div", "option");
+    var who = el("div", "who");
+    who.appendChild(pot(t.dot));
+    who.appendChild(document.createTextNode(label + t.name));
+    who.appendChild(strengthPill(t));
+    box.appendChild(who);
+    box.appendChild(el("p", null, pair[1] + " " + STRENGTH[t.strength].how));
+    return box;
+  }
+
+  function renderCoach() {
+    document.querySelectorAll("#family-chips .chip").forEach(function (b) {
+      b.setAttribute("aria-pressed", String(b.dataset.family === state.family));
+    });
+    document.querySelectorAll("#problem-grid .big-btn").forEach(function (b) {
+      b.setAttribute("aria-pressed", String(b.dataset.problem === state.problem));
+    });
+
+    var card = $("coach-card");
+    card.textContent = "";
+    var a = state.problem ? advice(state.family, state.problem) : null;
+
+    var img = document.createElement("img");
+    img.className = "coach-marv";
+    img.alt = "MARV";
+    img.src = a ? (a.sprite || "brand/marv/confident.jpg") : "brand/marv/focussed.jpg";
+    var say = el("div", "say");
+
+    if (!a) {
+      say.appendChild(el("h3", null, "Tell me what you see"));
+      say.appendChild(el("p", null, "Hold your test dab next to the target, then tap the one thing that is most wrong. I'll tell you which tin to reach for."));
+    } else {
+      say.appendChild(el("h3", null, a.head));
+      if (a.plain) say.appendChild(el("p", null, a.plain));
+      if (a.first) say.appendChild(optionBlock("Add ", a.first));
+      if (a.second) say.appendChild(optionBlock("Or try ", a.second));
+      if (a.list) {
+        var box = el("div", "option");
+        box.appendChild(el("p", null, "The clean tinters: " + a.list.map(function (id) { return T[id].name; }).join(", ") + "."));
+        say.appendChild(box);
+      }
+      if (a.note) say.appendChild(el("p", "hint", a.note));
+    }
+    card.appendChild(img); card.appendChild(say);
+  }
+
+  // ── Tinter reference ──
+  function renderTinters() {
+    var list = $("tinter-list");
+    TINTERS.forEach(function (t) {
+      var row = el("div", "tinter");
+      var body = el("div");
+      var h = el("h3", null, t.name);
+      h.appendChild(strengthPill(t));
+      var dl = el("dl");
+      [["Code", t.code], ["Material", t.mat], ["Density", t.density + " kg/m³"], ["Group", t.group]].forEach(function (p) {
+        dl.appendChild(el("dt", null, p[0]));
+        dl.appendChild(el("dd", null, p[1]));
+      });
+      body.appendChild(h); body.appendChild(dl); body.appendChild(el("p", null, t.note));
+      row.appendChild(pot(t.dot, "lg")); row.appendChild(body);
+      list.appendChild(row);
+    });
+  }
+
+  // ── Wiring ──
+  var TABS = ["scale", "fix", "tinters"];
+  function showTab(name, scroll) {
+    TABS.forEach(function (n) {
+      $("tab-" + n).setAttribute("aria-selected", String(n === name));
+      $("panel-" + n).hidden = n !== name;
+    });
+    $("hero-title").textContent = HERO[name].title;
+    $("hero-sub").textContent = HERO[name].sub;
+    if (scroll) window.scrollTo(0, 0);
+    try { localStorage.setItem("mixbench-tab", name); } catch (e) { /* storage unavailable */ }
+  }
+  TABS.forEach(function (n) { $("tab-" + n).addEventListener("click", function () { showTab(n, true); }); });
+
+  $("recipe-qty").addEventListener("input", function (e) { state.recipeQty = parseFloat(e.target.value) || 0; touched(); renderResults(); });
+  $("need-qty").addEventListener("input", function (e) { state.need = parseFloat(e.target.value) || 0; renderResults(); });
+  $("need-minus").addEventListener("click", function () { nudge(-1); });
+  $("need-plus").addEventListener("click", function () { nudge(1); });
+  $("need-chips").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-need]");
+    if (b) setNeed(parseFloat(b.dataset.need));
+  });
+  $("res-chips").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-res]");
+    if (b) { state.res = parseFloat(b.dataset.res); renderResults(); }
+  });
+  $("add-row").addEventListener("click", function () {
+    state.rows.push({ t: "TWX", g: 0 });
+    touched(); renderRows(); renderResults();
+    var last = $("row-t-" + (state.rows.length - 1));
+    if (last) last.focus();
+  });
+  $("clear-rows").addEventListener("click", function () {
+    state.rows = [];
+    touched(); renderRows(); renderResults();
+  });
+  $("load-example").addEventListener("click", function () {
+    state.recipeQty = EXAMPLE.recipeQty;
+    state.rows = EXAMPLE.rows.map(function (r) { return { t: r.t, g: r.g }; });
+    state.isExample = true;
+    $("recipe-qty").value = String(state.recipeQty);
+    $("example-note").hidden = false;
+    renderRows(); renderResults();
+  });
+  $("family-chips").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-family]");
+    if (b) { state.family = b.dataset.family; renderCoach(); }
+  });
+  $("problem-grid").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-problem]");
+    if (b) { state.problem = b.dataset.problem; renderCoach(); $("coach-card").scrollIntoView({ block: "nearest", behavior: "smooth" }); }
+  });
+
+  renderRows();
+  renderResults();
+  renderCoach();
+  renderTinters();
+  try {
+    var saved = localStorage.getItem("mixbench-tab");
+    if (saved && TABS.indexOf(saved) !== -1) showTab(saved, false);
+  } catch (e) { /* storage unavailable */ }
+})();
+</script>
+</body>
+</html>

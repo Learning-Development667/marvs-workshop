@@ -11,10 +11,12 @@ Colour matching for Magicman technicians. It combines two earlier projects, MARV
 
 ## Status
 
-In progress. Photo matching and the colour match game each work on their own page. Still to do: mixing to a colour read from a photo, a shared leaderboard, the small-mix tools from Mix Bench, and joining the pages into one app.
+In progress. A landing screen leads to three working sections: photo matching, the colour match game, and tint measurements. Still to do: mixing to a colour read from a photo, a shared leaderboard, saving and finding recipes, and a printed reference card.
 
 | Path | What it is |
 |---|---|
+| `index.html` | The landing screen, with three doors: Match from a photo, Colour match, Tint measurements |
+| `bench.html` | Tint measurements: the Mix Bench tools (scale a recipe, fix a mix, tinter reference) in the Workshop look. `css/bench.css` styles it |
 | `play.html` | Colour match: mix a patch to match a 3D scene. Four levels, five jobs a round, three attempts a job, hints from MARV, scores and a leaderboard kept on the phone |
 | `js/mix.js` | Paint mixing (three-channel Kubelka-Munk), the levels, job generation, hints. Estimated tint colours, not measured |
 | `tests/mix-test.js` | Checks mixes behave like paint and every generated job can be solved. Run with `node tests/mix-test.js` |
@@ -27,7 +29,7 @@ In progress. Photo matching and the colour match game each work on their own pag
 | `vendor/` | three.js r147 and the two add-ons the scene kit needs |
 | `brand/` | Magicman logo (from the brand guide) and the MARV poses |
 
-Open `examples.html` in a browser to run it. There is no build step.
+Open `index.html` in a browser to run it. There is no build step.
 
 ## Design rules
 
