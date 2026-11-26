@@ -1,0 +1,111 @@
+/* Marv's Workshop shared look.
+   Cream paper, navy ink, raised cards, pill buttons with a Magicman green edge
+   and a soft gloss. Colours are the brand guide's: Wasabi, Crow Black Blue and
+   Lone Hunter. Verdana throughout, as the owner asked. */
+:root {
+  --bg: #f6f4ef;
+  --surface-1: #fffefa;
+  --surface-2: #fbf7ef;
+  --sunken: #ece8df;
+  --ink: #13294b;
+  --ink-2: #4b5b6b;
+  --navy-1: #1f3d6b;
+  --navy-2: #13294b;
+  --navy-3: #081220;
+  --green: #aed284;
+  --green-ink: #4b5a39;
+  --hair: rgba(110, 160, 70, 0.45);
+  --rim: linear-gradient(160deg, #dff0c8, #93c847 45%, #aed284 70%, #4b5a39);
+  --rim-glow: rgba(110, 160, 70, 0.3);
+  --primary-ink: #f1f8e6;
+  --shadow-warm: rgba(120, 90, 40, 0.16);
+  --gloss: linear-gradient(rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0));
+  --pass-bg: #dff0c8;
+  --pass-ink: #2f4a1a;
+  --warn-bg: #fbf0d9;
+  --warn-ink: #6b4a08;
+  --logo-on-light: block;
+  --logo-on-dark: none;
+  --font: Verdana, Geneva, "DejaVu Sans", Tahoma, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1b24; --surface-1: #1c2f40; --surface-2: #162634; --sunken: #0c161e;
+    --ink: #e8eef3; --ink-2: #b4c1cc; --green-ink: #aed284;
+    --shadow-warm: rgba(0, 0, 0, 0.45); --gloss: linear-gradient(rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0));
+    --pass-bg: #24391a; --pass-ink: #cfeaae; --warn-bg: #3a2e14; --warn-ink: #f0cc80;
+    --logo-on-light: none; --logo-on-dark: block;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1b24; --surface-1: #1c2f40; --surface-2: #162634; --sunken: #0c161e;
+  --ink: #e8eef3; --ink-2: #b4c1cc; --green-ink: #aed284;
+  --shadow-warm: rgba(0, 0, 0, 0.45); --gloss: linear-gradient(rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0));
+  --pass-bg: #24391a; --pass-ink: #cfeaae; --warn-bg: #3a2e14; --warn-ink: #f0cc80;
+  --logo-on-light: none; --logo-on-dark: block;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+img { max-width: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--navy-1); outline-offset: 3px; }
+
+.wrap {
+  max-width: 780px; margin: 0 auto; padding-block: 22px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 18px;
+}
+.logo { width: 190px; max-width: 60%; margin: 6px 0 22px; }
+.logo img { width: 100%; height: auto; }
+.logo .on-light { display: var(--logo-on-light); }
+.logo .on-dark { display: var(--logo-on-dark); }
+.eyebrow { font-size: 12px; font-weight: bold; letter-spacing: 0.14em; text-transform: uppercase; color: var(--green-ink); }
+header h1 { margin: 0; font-weight: bold; font-size: 28px; line-height: 1.15; letter-spacing: -0.01em; text-wrap: balance; }
+header p { margin: 6px 0 0; color: var(--ink-2); max-width: 60ch; }
+
+.card {
+  background: linear-gradient(180deg, var(--surface-1), var(--surface-2));
+  border-radius: 22px; padding: 16px;
+  box-shadow: inset 0 0 0 1px var(--hair), inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 1px 2px rgba(90, 70, 30, 0.06), 0 10px 24px var(--shadow-warm);
+  display: flex; flex-direction: column; gap: 12px;
+}
+.card h2 { margin: 0; font-weight: bold; font-size: 18px; }
+.note { margin: 0; font-size: 14px; color: var(--ink-2); }
+.row { display: flex; flex-wrap: wrap; gap: 10px; }
+
+.pill {
+  position: relative; isolation: isolate; border: 2px solid transparent; border-radius: 999px;
+  min-height: 46px; padding: 8px 18px; font-size: 15px; font-weight: 700; color: var(--ink);
+  background: linear-gradient(180deg, var(--surface-1), var(--surface-2)) padding-box, var(--rim) border-box;
+  box-shadow: 0 6px 14px var(--shadow-warm), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  transition: transform 0.1s ease, box-shadow 0.15s ease;
+  display: inline-flex; align-items: center; justify-content: center; text-align: center;
+}
+.pill::before { content: ""; position: absolute; z-index: -1; left: 7%; right: 7%; top: 2px; height: 42%; border-radius: 999px 999px 40% 40%; background: var(--gloss); pointer-events: none; }
+.pill:active { transform: translateY(1px); box-shadow: 0 2px 6px var(--shadow-warm); }
+.pill:disabled { opacity: 0.5; cursor: default; }
+.pill.primary, .pill[aria-pressed="true"] {
+  color: var(--primary-ink); text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
+  background: linear-gradient(180deg, var(--navy-1) 0%, var(--navy-2) 55%, var(--navy-3) 100%) padding-box, var(--rim) border-box;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18), 0 8px 20px var(--rim-glow), 0 2px 4px rgba(10, 20, 40, 0.3);
+}
+.pill.primary::before, .pill[aria-pressed="true"]::before { background: linear-gradient(rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.02)); }
+
+/* A colour shown as a paint disc */
+.disc {
+  flex: none; display: block; width: 64px; height: 64px; border-radius: 50%;
+  outline: 2px solid var(--green); outline-offset: 2px;
+  box-shadow: inset 0 -7px 10px rgba(0, 0, 0, 0.25), inset 0 3px 5px rgba(255, 255, 255, 0.3), 0 6px 12px var(--shadow-warm);
+}
+.readout { text-align: center; font-weight: bold; font-size: 15px; padding: 8px 12px; border-radius: 12px; background: var(--sunken); box-shadow: inset 0 2px 6px rgba(19, 41, 75, 0.12); font-variant-numeric: tabular-nums; }
+.banner { margin: 0; font-weight: 700; font-size: 15px; padding: 10px 14px; border-radius: 12px; }
+.banner.pass { background: var(--pass-bg); color: var(--pass-ink); }
+.banner.warn { background: var(--warn-bg); color: var(--warn-ink); }
+.banner.plain { background: var(--sunken); color: var(--ink); }

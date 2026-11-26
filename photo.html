@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#13294b">
+<title>Match from a photo</title>
+<link rel="stylesheet" href="css/workshop.css">
+<style>
+  .photo-stage { position: relative; border-radius: 16px; overflow: hidden; background: #cfc9be; box-shadow: inset 0 0 0 1px rgba(19, 41, 75, 0.18); line-height: 0; }
+  .photo-stage canvas { display: block; width: 100%; height: auto; }
+  #overlay { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+  .tag { position: absolute; left: 12px; top: 12px; background: rgba(12, 28, 53, 0.82); color: #fff; font-size: 13px; font-weight: bold; padding: 5px 12px; border-radius: 999px; line-height: 1.4; max-width: calc(100% - 24px); }
+  .trio { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 10px; }
+  .tri { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; }
+  .tri strong { font-size: 14.5px; line-height: 1.25; }
+  .tri span { font-size: 13px; color: var(--ink-2); line-height: 1.3; }
+  .tri .disc { width: 72px; height: 72px; }
+  @media (max-width: 380px) { .tri .disc { width: 60px; height: 60px; } }
+  .offstage { position: fixed; left: -3000px; top: 0; width: 1200px; height: 900px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo"><img class="on-light" src="brand/logo.svg" alt="Magicman: repair, renew, restore"><img class="on-dark" src="brand/logo-white.svg" alt="Magicman: repair, renew, restore"></div>
+    <span class="eyebrow">Marv's Workshop</span>
+    <h1>Match from a photo</h1>
+    <p>A reference card of known colours goes in the photo. The app sees what the camera has done to those colours and uses that to work out the surface's true colour.</p>
+  </header>
+
+  <div class="card">
+    <h2>1. The photo</h2>
+    <p class="note">Until the printed reference card arrives, the app gives you a virtual one to slide into the photo.</p>
+    <div class="row">
+      <button class="pill primary" type="button" id="btn-sample">Use a sample photo</button>
+      <button class="pill" type="button" id="btn-camera">Take a photo</button>
+      <button class="pill" type="button" id="btn-file">Choose a photo</button>
+    </div>
+    <input type="file" accept="image/*" capture="environment" id="in-camera" hidden>
+    <input type="file" accept="image/*" id="in-file" hidden>
+    <p class="banner warn" id="load-error" hidden></p>
+  </div>
+
+  <div class="card" id="work" hidden>
+    <h2>2. Place the card and pick the surface</h2>
+    <div class="row" id="modes" hidden>
+      <button class="pill" type="button" data-mode="virtual" aria-pressed="true">Virtual card</button>
+      <button class="pill" type="button" data-mode="printed" aria-pressed="false">Printed card is in the photo</button>
+    </div>
+    <div class="photo-stage">
+      <canvas id="photo"></canvas>
+      <canvas id="overlay" aria-label="The photo. Drag the reference card into place and tap the surface to match."></canvas>
+      <span class="tag" id="tag" hidden></span>
+    </div>
+    <p class="banner plain" id="guide" aria-live="polite"></p>
+  </div>
+
+  <div class="card" id="result" hidden aria-live="polite">
+    <h2>3. The colour</h2>
+    <div class="trio">
+      <div class="tri"><i class="disc" id="d-raw"></i><strong>Camera saw</strong><span id="t-raw"></span></div>
+      <div class="tri" id="tri-cor"><i class="disc" id="d-cor"></i><strong>With the card</strong><span id="t-cor"></span></div>
+      <div class="tri" id="tri-true"><i class="disc" id="d-true"></i><strong>Actual colour</strong><span id="t-true"></span></div>
+    </div>
+    <p class="banner" id="verdict"></p>
+    <p class="note" id="fit-note"></p>
+    <p class="note">Difference is measured on the paint industry's scale. Under 1 cannot be seen, 1 to 2 is a match to a trained eye, and over 5 is plainly a different colour.</p>
+    <p class="note"><strong>Still to come:</strong> mixing this colour with the tints on the van.</p>
+  </div>
+</div>
+
+<canvas class="offstage" id="render" aria-hidden="true"></canvas>
+
+<script src="js/colour.js"></script>
+<script src="js/refcard.js"></script>
+<script>
+(function () {
+  "use strict";
+  var C = window.MarvColour, K = window.MarvCard;
+  var $ = function (id) { return document.getElementById(id); };
+  var photo = $("photo"), overlay = $("overlay");
+  var pctx = photo.getContext("2d", { willReadFrequently: true }), octx = overlay.getContext("2d");
+  var MAX_SIDE = 1400;
+  var mode = "virtual";            // "virtual": the app draws the card. "printed": a real card is in the photo.
+  var card = { a: null, b: null }; // the card's two end marks, in image pixels
+  var spot = null;                 // the surface point to read
+  var sample = null;               // set for a made-up sample photo: { base, truth, cast }
+  var drag = null;
+
+  // ── Loading a photo ──
+  function fit(w, h) { var k = Math.min(1, MAX_SIDE / Math.max(w, h)); return [Math.round(w * k), Math.round(h * k)]; }
+  function setCanvas(w, h) { photo.width = overlay.width = w; photo.height = overlay.height = h; }
+  function defaultCard() {
+    var w = photo.width, h = photo.height, len = w * 0.5;
+    return { a: { x: w * 0.09, y: h * 0.86 }, b: { x: w * 0.09 + len, y: h * 0.86 } };
+  }
+  function setMode(m) {
+    mode = m;
+    document.querySelectorAll("#modes .pill").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.mode === m)); });
+    card = m === "virtual" ? defaultCard() : { a: null, b: null };
+    spot = null; $("result").hidden = true;
+    redraw(); guide();
+  }
+  function begin() {
+    $("work").hidden = false; $("result").hidden = true; $("load-error").hidden = true;
+    $("modes").hidden = !!sample;
+    setMode("virtual");
+    if (sample) bake(true);
+    $("work").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  function loadFile(file) {
+    if (!file) return;
+    var url = URL.createObjectURL(file), img = new Image();
+    img.onload = function () {
+      var d = fit(img.naturalWidth, img.naturalHeight);
+      setCanvas(d[0], d[1]);
+      pctx.drawImage(img, 0, 0, d[0], d[1]);
+      URL.revokeObjectURL(url);
+      sample = null; $("tag").hidden = true;
+      begin();
+    };
+    img.onerror = function () {
+      URL.revokeObjectURL(url);
+      $("load-error").textContent = "That file could not be opened as a picture. Try a JPEG or PNG photo.";
+      $("load-error").hidden = false;
+    };
+    img.src = url;
+  }
+  $("btn-camera").addEventListener("click", function () { $("in-camera").click(); });
+  $("btn-file").addEventListener("click", function () { $("in-file").click(); });
+  $("in-camera").addEventListener("change", function (e) { loadFile(e.target.files[0]); e.target.value = ""; });
+  $("in-file").addEventListener("change", function (e) { loadFile(e.target.files[0]); e.target.value = ""; });
+  $("modes").addEventListener("click", function (e) { var b = e.target.closest("[data-mode]"); if (b) setMode(b.dataset.mode); });
+
+  // ── A made-up sample photo: a 3D scene, with a camera's colour shift applied ──
+  // Each shift changes the balance and brightness like a phone would, lifts the shadows, and boosts colour.
+  var CASTS = [
+    { name: "warm indoor light", gain: [1.14, 0.98, 0.76], gamma: 0.92, lift: 0.10, sat: 1.12 },
+    { name: "open shade",        gain: [0.84, 0.98, 1.20], gamma: 0.95, lift: 0.14, sat: 1.10 },
+    { name: "direct sun",        gain: [1.04, 1.05, 1.12], gamma: 0.84, lift: 0.12, sat: 1.18 },
+    { name: "a dim room",        gain: [0.82, 0.76, 0.68], gamma: 1.06, lift: 0.06, sat: 1.06 }
+  ];
+  function applyCast(ctx, cast) {
+    var w = ctx.canvas.width, h = ctx.canvas.height, img = ctx.getImageData(0, 0, w, h), d = img.data;
+    var lut = [0, 1, 2].map(function (ch) {
+      var t = new Float32Array(256);
+      for (var v = 0; v < 256; v++) {
+        var lin = cast.gain[ch] * Math.pow(Math.max(1e-4, C.srgbToLinear(v)), cast.gamma);
+        t[v] = cast.lift * 255 + (1 - cast.lift) * C.linearToSrgb(lin);
+      }
+      return t;
+    });
+    for (var i = 0; i < d.length; i += 4) {
+      var r = lut[0][d[i]], g = lut[1][d[i + 1]], b = lut[2][d[i + 2]];
+      var y = 0.3 * r + 0.59 * g + 0.11 * b;
+      d[i] = y + cast.sat * (r - y); d[i + 1] = y + cast.sat * (g - y); d[i + 2] = y + cast.sat * (b - y);
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+  // Rebuild the sample "photo": the scene, the card laid in it (or not, while it is being moved), then the camera's shift.
+  function bake(withCard) {
+    var t = sample.truth;
+    t.drawImage(sample.base.canvas, 0, 0);
+    if (withCard && card.a && card.b) K.draw(t, card.a, card.b);
+    pctx.drawImage(t.canvas, 0, 0);
+    applyCast(pctx, sample.cast);
+  }
+  function loadScript(src) {
+    return new Promise(function (resolve, reject) {
+      var s = document.createElement("script"); s.src = src; s.onload = resolve; s.onerror = function () { reject(new Error(src)); };
+      document.head.appendChild(s);
+    });
+  }
+  var ready3D = null, viewer = null;
+  function ensure3D() {
+    if (!ready3D) {
+      ready3D = loadScript("vendor/three.min.js")
+        .then(function () { return loadScript("vendor/RoundedBoxGeometry.js"); })
+        .then(function () { return loadScript("vendor/RoomEnvironment.js"); })
+        .then(function () { return loadScript("js/scenes.js"); });
+    }
+    return ready3D;
+  }
+  function hsl(h, s, l) {
+    s /= 100; l /= 100;
+    var k = function (n) { return (n + h / 30) % 12; }, a = s * Math.min(l, 1 - l);
+    var f = function (n) { return 255 * (l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)))); };
+    return C.toHex([f(0), f(8), f(4)]);
+  }
+  function canvas2d(w, h) { var c = document.createElement("canvas"); c.width = w; c.height = h; return c.getContext("2d", { willReadFrequently: true }); }
+  function makeSample() {
+    var btn = $("btn-sample"); btn.disabled = true; btn.textContent = "Making a sample";
+    ensure3D().then(function () {
+      if (!viewer) viewer = window.MarvScenes.createViewer($("render"), { pixelRatio: 1 });
+      viewer.resize();
+      var list = window.MarvScenes.list, scene = list[Math.floor(Math.random() * list.length)];
+      viewer.show(scene.id, 0);
+      viewer.setColour(hsl(Math.random() * 360, 8 + Math.random() * 44, 22 + Math.random() * 50));
+      viewer.setPatch(null);
+      var img = new Image();
+      img.onload = function () {
+        setCanvas(1200, 900);
+        var base = canvas2d(1200, 900);
+        base.drawImage(img, 0, 0, 1200, 900);
+        var cast = CASTS[Math.floor(Math.random() * CASTS.length)];
+        sample = { base: base, truth: canvas2d(1200, 900), cast: cast };
+        $("tag").textContent = "Sample: " + scene.name.toLowerCase() + " in " + cast.name; $("tag").hidden = false;
+        begin();
+        btn.disabled = false; btn.textContent = "Use a sample photo";
+      };
+      img.src = viewer.snapshot("image/png");
+    }).catch(function () {
+      btn.disabled = false; btn.textContent = "Use a sample photo";
+      $("load-error").textContent = "The sample could not be made because this browser could not start 3D graphics. Use a real photo instead.";
+      $("load-error").hidden = false;
+    });
+  }
+  $("btn-sample").addEventListener("click", makeSample);
+
+  // ── Moving things on the photo ──
+  function point(e) {
+    var r = overlay.getBoundingClientRect();
+    return { x: (e.clientX - r.left) * overlay.width / r.width, y: (e.clientY - r.top) * overlay.height / r.height };
+  }
+  function clampCard() {
+    var w = photo.width, h = photo.height, m = w * 0.04;
+    var dx = Math.max(m - Math.min(card.a.x, card.b.x), Math.min(0, w - m - Math.max(card.a.x, card.b.x)));
+    var dy = Math.max(m - Math.min(card.a.y, card.b.y), Math.min(0, h - m - Math.max(card.a.y, card.b.y)));
+    card.a.x += dx; card.b.x += dx; card.a.y += dy; card.b.y += dy;
+  }
+  function onCard(p) {
+    if (!(card.a && card.b)) return false;
+    var ax = card.a.x, ay = card.a.y, bx = card.b.x, by = card.b.y, len2 = (bx - ax) * (bx - ax) + (by - ay) * (by - ay);
+    var t = Math.max(-0.08, Math.min(1.08, ((p.x - ax) * (bx - ax) + (p.y - ay) * (by - ay)) / len2));
+    var d = Math.hypot(p.x - (ax + t * (bx - ax)), p.y - (ay + t * (by - ay)));
+    return d < Math.sqrt(len2) / (K.CARD.patches.length + 1) * 1.1;
+  }
+  function surfaceSize() { return Math.max(10, Math.round(Math.min(photo.width, photo.height) * 0.03)); }
+  function nearestMark(p) {
+    var r = overlay.getBoundingClientRect(), reach = 30 * overlay.width / r.width, best = null, bd = reach;
+    [["a", card.a], ["b", card.b], ["s", spot]].forEach(function (m) {
+      if (!m[1]) return;
+      var d = Math.hypot(m[1].x - p.x, m[1].y - p.y);
+      if (d < bd) { bd = d; best = m[0]; }
+    });
+    return best;
+  }
+  overlay.addEventListener("pointerdown", function (e) {
+    var p = point(e);
+    if (mode === "virtual") {
+      if (onCard(p)) {
+        drag = { kind: "card", ox: p.x - card.a.x, oy: p.y - card.a.y, len: { x: card.b.x - card.a.x, y: card.b.y - card.a.y } };
+        if (sample) bake(false);          // lift the card out of the scene while it is carried
+      } else { spot = p; drag = { kind: "s" }; }
+    } else {
+      var hit = nearestMark(p);
+      if (!hit) { hit = !card.a ? "a" : !card.b ? "b" : "s"; }
+      if (hit === "s") spot = p; else card[hit] = p;
+      drag = { kind: hit };
+    }
+    try { overlay.setPointerCapture(e.pointerId); } catch (err) { /* older browsers */ }
+    redraw();
+  });
+  overlay.addEventListener("pointermove", function (e) {
+    if (!drag) return;
+    var p = point(e);
+    if (drag.kind === "card") {
+      card.a = { x: p.x - drag.ox, y: p.y - drag.oy };
+      card.b = { x: card.a.x + drag.len.x, y: card.a.y + drag.len.y };
+      clampCard();
+    } else if (drag.kind === "s") spot = p;
+    else card[drag.kind] = p;
+    redraw();
+  });
+  function drop() {
+    if (!drag) return;
+    var wasCard = drag.kind === "card";
+    drag = null;
+    if (wasCard && sample) bake(true);
+    redraw(); guide(); compute();
+  }
+  overlay.addEventListener("pointerup", drop);
+  overlay.addEventListener("pointercancel", drop);
+
+  function guide() {
+    var g = $("guide");
+    if (mode === "virtual") {
+      g.textContent = spot ? "Drag the card or the square to adjust. The colour updates when you let go."
+        : "Drag the reference card next to the damage, then tap the surface you want to match.";
+    } else if (!card.a) g.textContent = "Tap the dot at one end of the printed card.";
+    else if (!card.b) g.textContent = "Now tap the dot at the other end.";
+    else if (!spot) g.textContent = "Tap the surface you want to match, close to the damage.";
+    else g.textContent = "Drag any mark to adjust it. The colour updates when you let go.";
+  }
+  function redraw() {
+    var w = overlay.width, h = overlay.height, u = Math.max(2, w / 400);
+    octx.clearRect(0, 0, w, h);
+    function ring(p, label) {
+      octx.lineWidth = u * 1.5; octx.strokeStyle = "#ffffff"; octx.fillStyle = "#13294b";
+      octx.beginPath(); octx.arc(p.x, p.y, u * 9, 0, Math.PI * 2); octx.fill(); octx.stroke();
+      octx.fillStyle = "#ffffff"; octx.font = "bold " + (u * 9) + "px Verdana, sans-serif"; octx.textAlign = "center"; octx.textBaseline = "middle";
+      octx.fillText(label, p.x, p.y + u * 0.5);
+    }
+    if (mode === "virtual" && card.a && card.b) {
+      // On a real photo the virtual card only ever lives on this layer. On a sample it is drawn here while carried.
+      if (!sample || (drag && drag.kind === "card")) K.draw(octx, card.a, card.b);
+    }
+    if (mode === "printed") {
+      if (card.a && card.b) {
+        var size = K.sampleSize(card.a, card.b);
+        octx.lineWidth = u; octx.strokeStyle = "rgba(174,210,132,0.95)";
+        K.patchCentres(card.a, card.b).forEach(function (c) { octx.strokeRect(c.x - size / 2, c.y - size / 2, size, size); });
+      }
+      if (card.a) ring(card.a, "A");
+      if (card.b) ring(card.b, "B");
+    }
+    if (spot) {
+      var ss = surfaceSize();
+      octx.lineWidth = u * 1.5; octx.strokeStyle = "#ffffff"; octx.strokeRect(spot.x - ss / 2, spot.y - ss / 2, ss, ss);
+      octx.lineWidth = u * 0.8; octx.strokeStyle = "#13294b"; octx.strokeRect(spot.x - ss / 2 - u, spot.y - ss / 2 - u, ss + 2 * u, ss + 2 * u);
+    }
+  }
+
+  // ── The answer ──
+  function compute() {
+    if (!spot) { $("result").hidden = true; return; }
+    if (mode === "printed" && !(card.a && card.b)) { $("result").hidden = true; return; }
+    var raw = K.readSquare(pctx, spot.x, spot.y, surfaceSize());
+    var v = $("verdict"), note = $("fit-note");
+    $("d-raw").style.background = C.toHex(raw);
+    var canCorrect = mode === "printed" || !!sample;
+    $("tri-cor").hidden = !canCorrect;
+    $("tri-true").hidden = !sample;
+
+    if (!canCorrect) {
+      $("t-raw").textContent = "not corrected";
+      v.className = "banner warn";
+      v.textContent = "This reading is not corrected.";
+      note.textContent = "The virtual card shows where the printed card will go. It has not been through your camera, so it cannot tell the app what the camera changed. Try a sample photo to see the correction working.";
+      $("result").hidden = false;
+      return;
+    }
+    var read = K.readCard(pctx, card.a, card.b), cor = read.fit.apply(raw);
+    $("d-cor").style.background = C.toHex(cor);
+    if (sample) {
+      var truth = K.readSquare(sample.base, spot.x, spot.y, surfaceSize());
+      var e0 = C.deltaRgb(raw, truth), e1 = C.deltaRgb(cor, truth);
+      $("d-true").style.background = C.toHex(truth);
+      $("t-true").textContent = "known, as the photo is made up";
+      $("t-raw").textContent = "off by " + e0.toFixed(1);
+      $("t-cor").textContent = "off by " + e1.toFixed(1);
+      if (e1 < e0) { v.className = "banner pass"; v.textContent = "The card cut the error from " + e0.toFixed(1) + " to " + e1.toFixed(1) + "."; }
+      else { v.className = "banner warn"; v.textContent = "The card did not help here: " + e0.toFixed(1) + " before, " + e1.toFixed(1) + " after. Move the card onto an evenly lit part of the picture."; }
+    } else {
+      $("t-raw").textContent = "before correction";
+      $("t-cor").textContent = "the surface's colour";
+      v.className = "banner plain";
+      v.textContent = "The card shifted the reading by " + C.deltaRgb(raw, cor).toFixed(1) + ".";
+    }
+    note.textContent = (read.fit.used < 3
+      ? "The camera could not tell enough of the card's patches apart, so only a white balance was applied."
+      : "Corrected using " + read.fit.used + " of the card's " + read.fit.total + " patches.")
+      + (sample ? " Sample photos are simulated. Real photos in the feasibility tests came out between 4 and 10, so a phone will not reach repair accuracy yet."
+                : " Card " + K.CARD.id + ": " + K.CARD.status);
+    $("result").hidden = false;
+  }
+})();
+</script>
+</body>
+</html>

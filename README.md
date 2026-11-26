@@ -11,10 +11,14 @@ Colour matching for Magicman technicians. It combines two earlier projects, MARV
 
 ## Status
 
-Early. The repo so far holds the 3D scene kit and a page for trying the scenes out. The app itself is not built yet.
+Early. Photo matching and the 3D scenes each work on their own page. The mixing, the levels and scoring, leaderboards and the small-mix tools are not built yet, and the pages are not yet joined into one app.
 
 | Path | What it is |
 |---|---|
+| `photo.html` | Match from a photo: slide a reference card into the picture, tap the surface, read its corrected colour |
+| `js/colour.js` | Colour maths: CIELAB, the ΔE2000 difference, and the camera correction fitted from the reference card |
+| `js/refcard.js` | The reference card: its patches and how it is read from a photo. Provisional until a printed card is measured |
+| `tests/colour-test.js` | Checks the maths against published reference pairs and the feasibility report's 68 photo readings. Run with `node tests/colour-test.js` |
 | `examples.html` | Try the scenes: turn, pinch to zoom, move the damage, random jobs, pass mark by level |
 | `js/scenes.js` | The scene kit: fourteen 3D scenes, damage spots, the viewer |
 | `vendor/` | three.js r147 and the two add-ons the scene kit needs |
@@ -31,6 +35,8 @@ Open `examples.html` in a browser to run it. There is no build step.
 
 ## What is approximate
 
+- **The reference card is virtual for now.** On the built-in sample photos it corrects the colour properly, because the app lays the card in the scene before applying a simulated camera shift. On a real photo a virtual card cannot correct anything, since it has not been through the camera, and the page says so. A printed card in the shot is supported, but no printed card exists yet and its patch values would need measuring.
+- Sample photos are simulated. In the feasibility tests real photos came out between 4 and 10 on the ΔE2000 scale, against the 1 to 2 a repair needs.
 - Target colours are generated in code and are not exact RAL values.
 - The 3D scenes are simple models built for this app, not photographs.
 - In `examples.html` a slider stands in for the player's mixing. The real mixing model is still to be built, and no measured data exists for how the van tints behave when mixed.
