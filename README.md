@@ -21,6 +21,9 @@ In progress. A landing screen leads to three working sections: photo matching, t
 | `js/mix.js` | Paint mixing (three-channel Kubelka-Munk), the levels, job generation, hints. Estimated tint colours, not measured |
 | `tests/mix-test.js` | Checks mixes behave like paint and every generated job can be solved. Run with `node tests/mix-test.js` |
 | `photo.html` | Marv's Photo Match, with two tabs. Mix to a photo: read a surface's colour, corrected by the reference card if one is in the photo, then mix to it. Find the colour: tap an area and the app names the colour and suggests a mix of van tints |
+| `settings.html` | Settings: appearance (light, dark, or follow the phone), text size up to double, video guides with the steps written out, and the version |
+| `guides/` | The five video guides (MP4, silent, captions on screen) and their poster images, recorded from the app itself |
+| `tools/bump-version.py` | Sets the version everywhere at once. Run it before each release so phones offer the update |
 | `card.html` | The printable reference card (test print, not measured) |
 | `js/app.js` | Shared by every page: the version number shown on the home screen, and keeping the page from zooming |
 | `js/colour.js` | Colour maths: CIELAB, the ΔE2000 difference, and the camera correction fitted from the reference card |
@@ -41,6 +44,8 @@ Open `index.html` in a browser to run it. There is no build step.
 - **The camera** is the phone's own camera app, opened from the Take a photo button. It only works when the app is served from its own web address (GitHub Pages), not inside a preview.
 - **Look:** cream paper, navy ink, raised cards, pill buttons with a Magicman green edge and a soft gloss.
 - **Wording:** it is not called a training app.
+- **Accessibility:** checked against WCAG 2.2 AA with axe-core on every page, in light and dark, with no violations. Pinch zoom is blocked on iPhone to stop accidental zooming, so Settings offers text size up to 200% instead (WCAG technique G178).
+- **Loading screen:** shown once each time the app is opened, skipped with a tap, and still for anyone who has reduced motion switched on.
 
 ## What is approximate
 

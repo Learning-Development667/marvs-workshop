@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#13294b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Marv's Workshop">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="brand/icon-192.png">
+<link rel="apple-touch-icon" href="brand/icon-180.png">
+<script src="js/app.js?v=0.10"></script>
+<title>Settings</title>
+<link rel="stylesheet" href="css/workshop.css?v=0.10">
+<style>
+  .choice { width: 100%; display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 2px 14px; align-items: center; padding: 14px 4px; border: 0; border-bottom: 1px solid var(--hair); background: none; text-align: left; color: var(--ink); min-height: 56px; }
+  .choice:last-child { border-bottom: 0; }
+  .choice b { font-size: 16px; }
+  .choice span { grid-column: 2; font-size: 14px; color: var(--ink-2); }
+  .choice .tick { grid-row: 1 / span 2; width: 26px; height: 26px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--ink-2); display: flex; align-items: center; justify-content: center; color: transparent; }
+  .choice .tick svg { width: 15px; height: 15px; }
+  .choice[aria-checked="true"] .tick { background: var(--navy-2); box-shadow: inset 0 0 0 2px var(--green); color: #fff; }
+  .guide { display: flex; flex-direction: column; gap: 10px; padding: 16px 0; border-top: 1px solid var(--hair); }
+  .guide:first-child { border-top: 0; padding-top: 0; }
+  .guide h3 { margin: 0; font-size: 17px; }
+  .guide p { margin: 0; font-size: 14.5px; color: var(--ink-2); }
+  .guide video { width: 100%; max-width: 250px; align-self: center; aspect-ratio: 390 / 760; border-radius: 16px; background: var(--navy-2); box-shadow: inset 0 0 0 1px var(--hair), 0 8px 20px var(--shadow-warm); }
+  .guide details { font-size: 14.5px; }
+  .guide summary { cursor: pointer; font-weight: bold; min-height: 44px; display: flex; align-items: center; }
+  .guide ol { margin: 4px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+  .about { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 16px; margin: 0; font-size: 15px; }
+  .about dt { color: var(--ink-2); }
+  .about dd { margin: 0; font-weight: bold; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="back" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Workshop</a>
+    <div class="logo"><img class="on-light" src="brand/logo.svg" alt="Magicman: repair, renew, restore"><img class="on-dark" src="brand/logo-white.svg" alt="Magicman: repair, renew, restore"></div>
+    <span class="eyebrow">Marv's Workshop</span>
+    <h1>Settings</h1>
+  </header>
+
+  <section class="card" aria-labelledby="h-look">
+    <h2 id="h-look">Appearance</h2>
+    <div role="radiogroup" aria-labelledby="h-look" id="themes">
+      <button class="choice" type="button" role="radio" data-theme-choice="system"><i class="tick"></i><b>Match my phone</b><span>Light or dark, following your phone's setting</span></button>
+      <button class="choice" type="button" role="radio" data-theme-choice="light"><i class="tick"></i><b>Light</b><span>Cream paper and navy text</span></button>
+      <button class="choice" type="button" role="radio" data-theme-choice="dark"><i class="tick"></i><b>Dark</b><span>Easier on the eyes in dim light</span></button>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="h-size">
+    <h2 id="h-size">Text size</h2>
+    <div role="radiogroup" aria-labelledby="h-size" id="sizes">
+      <button class="choice" type="button" role="radio" data-size-choice="standard"><i class="tick"></i><b>Standard</b></button>
+      <button class="choice" type="button" role="radio" data-size-choice="larger"><i class="tick"></i><b>Larger</b><span>A quarter bigger</span></button>
+      <button class="choice" type="button" role="radio" data-size-choice="largest"><i class="tick"></i><b>Largest</b><span>Half as big again</span></button>
+      <button class="choice" type="button" role="radio" data-size-choice="double"><i class="tick"></i><b>Double</b><span>Twice the size</span></button>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="h-guides">
+    <h2 id="h-guides">Video guides</h2>
+    <p class="note">Short, silent screen recordings with captions. Each has the steps written out underneath.</p>
+    <div id="guides"></div>
+  </section>
+
+  <section class="card" aria-labelledby="h-about">
+    <h2 id="h-about">About</h2>
+    <dl class="about">
+      <dt>This copy</dt><dd id="v-here"></dd>
+      <dt>Latest</dt><dd id="v-latest">Checking</dd>
+    </dl>
+    <button class="btn-quiet" type="button" id="btn-check">Check for updates</button>
+    <p class="note"><a href="card.html">Print the reference card</a></p>
+  </section>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var GUIDES = [
+    { id: "photo-mix", title: "Marv's Photo Match: mix to a photo", what: "Read a surface's colour from a photo, with the reference card, and mix to it.",
+      steps: ["Open Marv's Photo Match.", "Lay the reference card flat beside the damage and take the photo close up.", "If the card is in the photo, tap \"The card is in this photo\", then tap the dark square at each end.", "The app reads the surface beside the card. Tap a different spot if it chose the wrong surface.", "Tap \"Mix this colour\", add tints, and check the match until the damage disappears."] },
+    { id: "photo-find", title: "Marv's Photo Match: find the colour", what: "Tap an area of a photo to name its colour and get a suggested mix of van tints.",
+      steps: ["Open Marv's Photo Match and choose the \"Find the colour\" tab.", "Take the photo with the reference card beside the area.", "Mark the card, then tap the area you want.", "Read the colour's name and the suggested tints in parts. Very strong tints are flagged.", "Treat the mix as a starting point and test it on a dab."] },
+    { id: "colour-lab", title: "Marv's Colour Lab", what: "Practise matching colours on 3D repair scenes, at four levels.",
+      steps: ["Open Marv's Colour Lab.", "Tap the level line to choose Trainee, Technician, Senior Technician or Master Technician.", "Turn the scene by dragging, and pinch to zoom in on the damage.", "Tap the paint cans to add drops. Trainees see a live match bar.", "Press \"Check the match\". Three attempts a job, five jobs a round."] },
+    { id: "mix-bench", title: "Marv's Mix Bench", what: "Scale a recipe to the amount you need, and fix a mix that is off.",
+      steps: ["Open Marv's Mix Bench.", "Enter the recipe you were sent and the amount it makes.", "Set how much you need and what your scale reads to.", "Weigh what the app says to weigh, and use a syringe where it says so.", "For a mix that is off, open \"Fix a mix\", choose what you are mixing and what is wrong, and add the tint MARV suggests."] },
+    { id: "ref-card", title: "Printing the reference card", what: "Print and use the reference card that corrects the camera.",
+      steps: ["In Settings or Photo Match, open \"Print the reference card\".", "Print at 100% or actual size, in colour, on matt paper.", "Cut out one card.", "On the job, lay it flat beside the damage, in the same light, before taking the photo.", "Keep it clean, flat and out of sunlight so its greys stay true."] }
+  ];
+  var box = $("guides");
+  GUIDES.forEach(function (g) {
+    var el = document.createElement("article"); el.className = "guide";
+    var h = document.createElement("h3"); h.textContent = g.title; el.appendChild(h);
+    var p = document.createElement("p"); p.textContent = g.what; el.appendChild(p);
+    var v = document.createElement("video");
+    v.controls = true; v.preload = "none"; v.setAttribute("playsinline", ""); v.muted = true;
+    v.poster = "guides/" + g.id + ".jpg"; v.src = "guides/" + g.id + ".mp4";
+    v.setAttribute("aria-label", "Video guide: " + g.title + ". The steps are written out below.");
+    el.appendChild(v);
+    var d = document.createElement("details"), s = document.createElement("summary"); s.textContent = "The steps in writing"; d.appendChild(s);
+    var ol = document.createElement("ol"); g.steps.forEach(function (t) { var li = document.createElement("li"); li.textContent = t; ol.appendChild(li); });
+    d.appendChild(ol); el.appendChild(d); box.appendChild(el);
+  });
+
+  var tick = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  function showTheme() {
+    var t = window.MarvApp.getTheme();
+    document.querySelectorAll("[data-theme-choice]").forEach(function (b) {
+      b.setAttribute("aria-checked", String(b.dataset.themeChoice === t));
+      b.querySelector(".tick").innerHTML = tick;
+    });
+  }
+  $("themes").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-theme-choice]"); if (!b) return;
+    window.MarvApp.setTheme(b.dataset.themeChoice); showTheme();
+  });
+  showTheme();
+  function showSize() {
+    var t = window.MarvApp.getSize();
+    document.querySelectorAll("[data-size-choice]").forEach(function (b) {
+      b.setAttribute("aria-checked", String(b.dataset.sizeChoice === t));
+      b.querySelector(".tick").innerHTML = tick;
+    });
+  }
+  $("sizes").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-size-choice]"); if (!b) return;
+    window.MarvApp.setSize(b.dataset.sizeChoice); showSize();
+  });
+  showSize();
+
+  $("v-here").textContent = window.MarvApp.version + " (" + window.MarvApp.built + ")";
+  document.addEventListener("marv-version", function (e) {
+    var v = e.detail;
+    $("v-latest").textContent = v ? v.version + (v.version === window.MarvApp.version ? ", you have it" : "") : "Could not check";
+  });
+  $("btn-check").addEventListener("click", function () { $("v-latest").textContent = "Checking"; window.MarvApp.checkForUpdate(); });
+  if (location.protocol === "file:") $("v-latest").textContent = "Not checked here";
+})();
+</script>
+</body>
+</html>
