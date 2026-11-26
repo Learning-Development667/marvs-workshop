@@ -29,7 +29,54 @@
   .twin .disc { width: 52px; height: 52px; }
   .disc.empty { background: repeating-linear-gradient(45deg, var(--sunken) 0 6px, var(--surface-1) 6px 12px); }
 
-  .pots { display: grid; grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 10px 6px; }
+  /* Level: one quiet line that opens a list */
+  .levelcard { padding: 0; gap: 0; overflow: hidden; }
+  .levelrow { width: 100%; display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 0; background: none; text-align: left; }
+  .lr-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .lr-text small { font-size: 11px; font-weight: bold; letter-spacing: 0.12em; text-transform: uppercase; color: var(--green-ink); }
+  .lr-text strong { font-size: 19px; line-height: 1.3; }
+  .lr-text span { font-size: 13.5px; color: var(--ink-2); }
+  .levelrow svg { flex: none; width: 22px; height: 22px; color: var(--ink-2); transition: transform 0.2s ease; }
+  .levelrow[aria-expanded="true"] svg { transform: rotate(180deg); }
+  .levellist { border-top: 1px solid var(--hair); }
+  .levelopt { width: 100%; display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 1px 12px; align-items: center; padding: 13px 16px; border: 0; border-bottom: 1px solid var(--hair); background: none; text-align: left; }
+  .levelopt:last-child { border-bottom: 0; }
+  .levelopt b { font-size: 16px; }
+  .levelopt span { grid-column: 2; font-size: 13px; color: var(--ink-2); }
+  .levelopt .tick { grid-row: 1 / span 2; width: 24px; height: 24px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--hair); display: flex; align-items: center; justify-content: center; color: transparent; }
+  .levelopt .tick svg { width: 14px; height: 14px; }
+  .levelopt[aria-checked="true"] { background: var(--sunken); }
+  .levelopt[aria-checked="true"] .tick { background: var(--navy-2); box-shadow: inset 0 0 0 2px var(--green); color: #fff; }
+
+  /* One main action, embossed; everything else quiet */
+  .btn-main {
+    width: 100%; min-height: 58px; border: 2px solid transparent; border-radius: 16px;
+    font-size: 17px; font-weight: bold; letter-spacing: 0.01em; color: var(--primary-ink); text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.55);
+    background: linear-gradient(180deg, var(--navy-1) 0%, var(--navy-2) 55%, var(--navy-3) 100%) padding-box, var(--rim) border-box;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), inset 0 -3px 6px rgba(0, 0, 0, 0.35), 0 10px 22px var(--rim-glow), 0 2px 4px rgba(10, 20, 40, 0.3);
+    transition: transform 0.08s ease, box-shadow 0.12s ease;
+  }
+  .btn-main:active { transform: translateY(2px); box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5), 0 3px 8px var(--rim-glow); }
+  .btn-quiet {
+    display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 14px; border-radius: 12px;
+    border: 1px solid var(--hair); background: var(--surface-1); font-size: 14px; font-weight: bold; color: var(--ink);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 2px 5px var(--shadow-warm);
+  }
+  .btn-quiet:active { transform: translateY(1px); }
+  .btn-quiet:disabled { opacity: 0.5; cursor: default; }
+  .btn-quiet svg { width: 18px; height: 18px; }
+  .meter { display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+  .meter-bar { position: relative; height: 16px; border-radius: 999px; background: var(--sunken); box-shadow: inset 0 2px 5px rgba(19, 41, 75, 0.18); overflow: hidden; }
+  .meter-bar i { display: block; height: 100%; width: 0; border-radius: 999px; background: linear-gradient(180deg, #c8e6a5, #93c847); transition: width 0.25s ease; }
+  .meter-bar b { position: absolute; top: 0; bottom: 0; width: 3px; background: var(--navy-2); }
+  #btn-skip, #btn-level { align-self: flex-start; }
+  .mixhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .mixhead h3 { margin: 0; font-size: 15px; }
+  .marv-body { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; min-width: 0; }
+
+  .pots { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 12px 6px; }
+  .pot img { width: 70px; height: 70px; object-fit: contain; filter: drop-shadow(0 7px 6px rgba(0, 0, 0, 0.3)); transition: transform 0.1s ease; }
+  .pot:active img { transform: scale(0.93) translateY(2px); }
   .pot { position: relative; border: 0; background: none; padding: 0; display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 11.5px; line-height: 1.2; color: var(--ink); text-align: center; }
   .pot i {
     display: block; width: 52px; height: 52px; border-radius: 50%; border: 2px solid transparent;
@@ -38,7 +85,7 @@
     transition: transform 0.1s ease;
   }
   .pot:active i { transform: scale(0.93); }
-  .pot .count { position: absolute; top: -4px; right: calc(50% - 34px); min-width: 22px; height: 22px; padding: 0 5px; border-radius: 999px; background: var(--navy-2); color: #fff; font-size: 12px; font-weight: bold; line-height: 22px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3); }
+  .pot .count { position: absolute; top: 0; right: calc(50% - 40px); min-width: 22px; height: 22px; padding: 0 5px; border-radius: 999px; background: var(--navy-2); color: #fff; font-size: 12px; font-weight: bold; line-height: 22px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3); }
   .pot .strong { font-size: 10px; font-weight: bold; color: var(--warn-ink); }
   .chips { display: flex; flex-wrap: wrap; gap: 8px; min-height: 40px; align-items: center; }
   .chip { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--hair); background: var(--sunken); border-radius: 999px; padding: 5px 6px 5px 12px; font-size: 13.5px; }
@@ -66,10 +113,12 @@
     <p>Mix the patch until it disappears into the surface. Five jobs a round, three attempts a job.</p>
   </header>
 
-  <div class="card">
-    <h2>Level</h2>
-    <div class="row" id="levels"></div>
-    <p class="note" id="level-note"></p>
+  <div class="card levelcard">
+    <button class="levelrow" type="button" id="level-toggle" aria-expanded="false" aria-controls="levels">
+      <span class="lr-text"><small>Level</small><strong id="level-name"></strong><span id="level-note"></span></span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+    </button>
+    <div class="levellist" id="levels" role="radiogroup" aria-label="Level" hidden></div>
   </div>
 
   <div class="card">
@@ -92,22 +141,32 @@
       </div>
     </div>
     <p class="banner plain" id="result" aria-live="polite" hidden></p>
-    <div class="row" id="after" hidden><button class="pill primary" type="button" id="btn-next">Next job</button></div>
+    <button class="btn-main" type="button" id="btn-next" hidden>Next job</button>
+    <button class="btn-quiet" type="button" id="btn-level" hidden>Change level</button>
   </div>
 
   <div class="card" id="bench">
     <h2 id="pal-title">Paints</h2>
     <div class="pots" id="pots"></div>
-    <div class="chips" id="chips"></div>
-    <div class="row">
-      <button class="pill primary" type="button" id="btn-check">Check the match</button>
-      <button class="pill" type="button" id="btn-hint">Ask MARV</button>
-      <button class="pill" type="button" id="btn-reset">Start the mix again</button>
+    <div class="mixhead">
+      <h3>In the pot</h3>
+      <button class="btn-quiet" type="button" id="btn-reset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.6-5.9"/><path d="M4 4v5h5"/></svg>Empty the pot</button>
     </div>
+    <div class="chips" id="chips"></div>
+    <div class="meter" id="meter" hidden>
+      <div class="meter-bar"><i id="meter-fill"></i><b id="meter-mark"></b></div>
+      <span id="meter-text"></span>
+    </div>
+    <button class="btn-main" type="button" id="btn-check">Check the match</button>
+    <p class="banner warn" id="check-msg" aria-live="assertive" hidden></p>
     <div class="marv">
       <img id="marv-img" src="brand/marv/focussed.jpg" alt="MARV">
-      <p id="marv-say" aria-live="polite"></p>
+      <div class="marv-body">
+        <p id="marv-say" aria-live="polite"></p>
+        <button class="btn-quiet" type="button" id="btn-hint">Ask MARV for a hint</button>
+      </div>
     </div>
+    <button class="btn-quiet" type="button" id="btn-skip">Skip this job</button>
   </div>
 
   <div class="card">
@@ -142,7 +201,7 @@
   var LIGHTNESS = { bath: [62, 96], basin: [66, 96], shower: [60, 96], bar: [12, 52], frontdoor: [12, 58], stonecill: [50, 88], floor: [36, 82] };
 
   var st = { level: "trainee", job: null, sceneId: null, spot: 0, mix: {}, attempt: 1, hints: 0, score: 0, done: 0, over: false, finished: false };
-  var viewer = null;
+  var viewer = null, cans = {};
 
   // ── Storage (this phone only) ──
   function load(key, fallback) { try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; } }
@@ -176,7 +235,7 @@
     $("job-title").textContent = meta(id).name;
     $("job-sub").textContent = viewer ? viewer.spots()[st.spot] : meta(id).blurb;
     $("d-target").style.background = C.toHex(st.job.target);
-    $("result").hidden = true; $("after").hidden = true; $("bench").hidden = false;
+    $("result").hidden = true; $("btn-next").hidden = true; $("btn-level").hidden = true; $("bench").hidden = false;
     say("focussed", st.level === "trainee"
       ? "New job. Tap a paint to add a drop. Ask me as often as you like."
       : lv().hints ? "New job. Start with the tint closest to the target, then adjust. You have " + lv().hints + " hints."
@@ -190,19 +249,21 @@
     var left = lv().hints === Infinity ? null : Math.max(0, lv().hints - st.hints);
     $("btn-hint").hidden = lv().hints === 0;
     $("btn-hint").disabled = left === 0;
-    $("btn-hint").textContent = left === null ? "Ask MARV" : "Ask MARV (" + left + " left)";
+    $("btn-hint").textContent = left === null ? "Ask MARV for a hint" : "Ask MARV for a hint (" + left + " left)";
   }
 
   // ── Paints and the mix ──
   function renderPalette() {
     var box = $("pots"); box.textContent = "";
     $("pal-title").textContent = lv().palette === "primaries" ? "Primary colours" : "The tints on the van";
-    M.palette(st.level).forEach(function (t) {
+    var pal = M.palette(st.level), key = lv().palette;
+    if (!(key in cans)) { try { cans[key] = MarvScenes.renderCans(pal.map(function (t) { return C.toHex(t.rgb); }), 96); } catch (e) { cans[key] = null; } }
+    pal.forEach(function (t, i) {
       var b = document.createElement("button");
       b.type = "button"; b.className = "pot"; b.dataset.id = t.id;
       b.setAttribute("aria-label", "Add a drop of " + t.name);
-      var dot = document.createElement("i"); dot.style.setProperty("--c", C.toHex(t.rgb));
-      b.appendChild(dot);
+      if (cans[key]) { var can = new Image(); can.alt = ""; can.src = cans[key][i]; b.appendChild(can); }
+      else { var dot = document.createElement("i"); dot.style.setProperty("--c", C.toHex(t.rgb)); b.appendChild(dot); }
       b.appendChild(document.createTextNode(t.name));
       if (t.strong) { var s = document.createElement("span"); s.className = "strong"; s.textContent = "Very strong"; b.appendChild(s); }
       b.addEventListener("click", function () { if (st.over) return; st.mix[t.id] = (st.mix[t.id] || 0) + 1; renderMix(); });
@@ -214,6 +275,16 @@
     disc.classList.toggle("empty", !c);
     disc.style.background = c ? C.toHex(c) : "";
     if (viewer && !st.over) viewer.setPatch(c ? C.toHex(c) : BARE);
+    $("check-msg").hidden = true;
+    // Trainees see how close they are as they mix. Higher levels judge by eye, then check.
+    var live = st.level === "trainee" && !!c && !st.over, pass = Math.round(100 - lv().maxDiff * 2.5);
+    $("meter").hidden = !live;
+    if (live) {
+      var now = M.judge(st.mix, st.job.target, st.level);
+      $("meter-fill").style.width = now.percent + "%";
+      $("meter-mark").style.left = "calc(" + pass + "% - 1.5px)";
+      $("meter-text").textContent = now.match ? "Match so far " + now.percent + "%. That is a match. Press Check the match." : "Match so far " + now.percent + "%. A match is " + pass + "%.";
+    }
     document.querySelectorAll("#pots .pot").forEach(function (b) {
       var n = st.mix[b.dataset.id] || 0, badge = b.querySelector(".count");
       if (n && !badge) { badge = document.createElement("span"); badge.className = "count"; b.appendChild(badge); }
@@ -239,11 +310,14 @@
     if (j.match) return endJob(true, j);
     if (st.attempt >= ATTEMPTS) return endJob(false, j);
     st.attempt += 1;
-    say("disappointed", "Not yet, " + j.percent + "% match and " + lv().name + " needs " + Math.round(100 - lv().maxDiff * 2.5) + "%. "
-      + (st.level === "trainee" ? M.hint(st.mix, st.job.target) : "Have another look and adjust."));
+    var need = Math.round(100 - lv().maxDiff * 2.5), left = ATTEMPTS - st.attempt + 1;
+    var msg = $("check-msg");
+    msg.textContent = "Not a match yet. You are at " + j.percent + "% and " + lv().name + " needs " + need + "%. " + left + (left === 1 ? " attempt" : " attempts") + " left.";
+    msg.hidden = false; msg.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    say("disappointed", st.level === "trainee" ? M.hint(st.mix, st.job.target) : "Not there yet. Have another look and adjust.");
     renderStatus();
   }
-  function endJob(matched, j) {
+  function endJob(matched, j, skipped) {
     st.over = true; st.done += 1;
     var r = $("result"), gained = 0;
     if (matched) {
@@ -255,13 +329,14 @@
       say(st.attempt === 1 ? "triumphant" : "congratulatory", st.attempt === 1 ? "First time. That is how it is done." : "Got there. Nicely adjusted.");
     } else {
       r.className = "banner warn";
-      r.textContent = "Out of attempts at " + j.percent + "% match. One way to mix it: " + M.recipeText(st.job.recipe) + ".";
+      r.textContent = (skipped ? "Skipped. " : "Out of attempts at " + j.percent + "% match. ") + "One way to mix it: " + M.recipeText(st.job.recipe) + ".";
       say("thumbsup", "That one got away. Look at the recipe, then try the next.");
     }
-    r.hidden = false;
+    r.hidden = false; $("meter").hidden = true; $("check-msg").hidden = true;
     st.finished = st.done >= JOBS;
     $("btn-next").textContent = st.finished ? "See the board and play again" : "Next job";
-    $("after").hidden = false; $("bench").hidden = true;
+    $("btn-next").hidden = false; $("btn-level").hidden = false; $("bench").hidden = true;
+    r.scrollIntoView({ block: "center", behavior: "smooth" });
     if (st.finished) {
       var name = ($("player").value || "").trim() || "You";
       (scores[st.level] = scores[st.level] || []).push({ name: name, score: st.score, when: Date.now() });
@@ -288,24 +363,38 @@
   }
 
   // ── Controls ──
+  function describe(l) {
+    return (l.palette === "primaries" ? "Primary colours" : "The eleven van tints")
+      + ". Match " + Math.round(100 - l.maxDiff * 2.5) + "%. "
+      + (l.hints === Infinity ? "Unlimited hints." : l.hints ? l.hints + " hints a job." : "No hints.");
+  }
   M.LEVELS.forEach(function (l) {
     var b = document.createElement("button");
-    b.type = "button"; b.className = "pill"; b.textContent = l.name; b.dataset.level = l.id;
-    b.setAttribute("aria-pressed", String(l.id === st.level));
-    b.addEventListener("click", function () { setLevel(l.id); });
+    b.type = "button"; b.className = "levelopt"; b.dataset.level = l.id; b.setAttribute("role", "radio");
+    var tick = document.createElement("i"); tick.className = "tick";
+    tick.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+    var name = document.createElement("b"); name.textContent = l.name;
+    var sub = document.createElement("span"); sub.textContent = describe(l);
+    b.appendChild(tick); b.appendChild(name); b.appendChild(sub);
+    b.addEventListener("click", function () { openLevels(false); if (l.id !== st.level) setLevel(l.id); });
     $("levels").appendChild(b);
   });
+  function openLevels(open) { $("levels").hidden = !open; $("level-toggle").setAttribute("aria-expanded", String(open)); }
+  $("level-toggle").addEventListener("click", function () { openLevels($("levels").hidden); });
   function setLevel(id) {
     st.level = id;
-    document.querySelectorAll("#levels .pill").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.level === id)); });
-    var l = lv();
-    $("level-note").textContent = (l.palette === "primaries" ? "Primary colours. " : "The eleven van tints. ")
-      + "A match needs " + Math.round(100 - l.maxDiff * 2.5) + "%. "
-      + (l.hints === Infinity ? "Unlimited hints." : l.hints ? l.hints + " hints a job, " + l.hintCost + " points each." : "No hints.")
-      + " Changing level starts a new round.";
+    document.querySelectorAll("#levels .levelopt").forEach(function (b) { b.setAttribute("aria-checked", String(b.dataset.level === id)); });
+    $("level-name").textContent = lv().name;
+    $("level-note").textContent = describe(lv());
     renderPalette(); renderBoard(); newRound();
   }
   $("btn-check").addEventListener("click", check);
+  $("btn-skip").addEventListener("click", function () {
+    if (st.over) return;
+    var j = M.drops(st.mix) ? M.judge(st.mix, st.job.target, st.level) : { percent: 0 };
+    endJob(false, j, true);
+  });
+  $("btn-level").addEventListener("click", function () { window.scrollTo({ top: 0, behavior: "smooth" }); openLevels(true); });
   $("btn-reset").addEventListener("click", function () { if (st.over) return; st.mix = {}; renderMix(); say("focussed", "Clean pot. Start again."); });
   $("btn-hint").addEventListener("click", function () {
     if (st.over) return;

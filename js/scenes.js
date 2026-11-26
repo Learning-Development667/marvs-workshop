@@ -793,8 +793,60 @@
     };
   }
 
+  /* Paint cans for the palette: an open tin showing its paint, rendered once per
+     colour to a picture with a clear background. Returns one image address per
+     colour, or null if 3D graphics are not available. */
+  function renderCans(hexList, size) {
+    var canvas = document.createElement("canvas"), renderer;
+    try { renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true, preserveDrawingBuffer: true }); }
+    catch (e) { return null; }
+    var px = (size || 96) * 2;
+    renderer.setPixelRatio(1); renderer.setSize(px, px, false);
+    renderer.setClearColor(0x000000, 0);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    var scene = new THREE.Scene();
+    var pm = new THREE.PMREMGenerator(renderer);
+    scene.environment = pm.fromScene(new THREE.RoomEnvironment(), 0.04).texture;
+    var key = new THREE.DirectionalLight(0xfff4e4, 0.75); key.position.set(-1.6, 3, 2.4); scene.add(key);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0xb8ad9c, 0.2));
+    var cam = new THREE.PerspectiveCamera(28, 1, 0.1, 20);
+    cam.position.set(0, 1.55, 2.95); cam.lookAt(0, -0.02, 0);
+
+    var tin = new THREE.MeshStandardMaterial({ color: "#c7ccd2", roughness: 0.3, metalness: 1, envMapIntensity: 1.2 });
+    var tinDark = new THREE.MeshStandardMaterial({ color: "#8d949c", roughness: 0.45, metalness: 1, side: THREE.BackSide });
+    var paint = new THREE.MeshPhysicalMaterial({ color: "#888888", roughness: 0.18, clearcoat: 0.6, clearcoatRoughness: 0.2, envMapIntensity: 0.9 });
+    var label = new THREE.MeshStandardMaterial({ color: "#888888", roughness: 0.55, envMapIntensity: 0.45 });
+    var can = new THREE.Group(); scene.add(can);
+    function add(geo, mat, y) { var m = new THREE.Mesh(geo, mat); if (y != null) m.position.y = y; can.add(m); return m; }
+    add(new THREE.CylinderGeometry(0.5, 0.5, 0.92, 64, 1, true), tin, 0);                 // body
+    add(new THREE.CylinderGeometry(0.5, 0.5, 0.92, 64, 1, true), tinDark, 0);             // inside wall
+    add(new THREE.CylinderGeometry(0.506, 0.506, 0.56, 64, 1, true), label, -0.02);       // colour band
+    add(new THREE.CircleGeometry(0.5, 64), tin, -0.46).rotation.x = Math.PI / 2;          // base
+    [0.46, -0.46].forEach(function (y) { add(new THREE.TorusGeometry(0.5, 0.032, 12, 64), tin, y).rotation.x = Math.PI / 2; });
+    add(new THREE.TorusGeometry(0.455, 0.022, 10, 64), tin, 0.445).rotation.x = Math.PI / 2;   // lid seat
+    add(new THREE.CircleGeometry(0.44, 64), paint, 0.36).rotation.x = -Math.PI / 2;       // the paint
+    // a run of paint over the rim
+    var drip = add(new THREE.SphereGeometry(0.07, 20, 16), paint, 0.36); drip.position.set(0.2, 0.36, 0.47); drip.scale.set(1, 2.3, 0.55);
+    var drop = add(new THREE.SphereGeometry(0.06, 20, 16), paint, 0.2); drop.position.set(0.2, 0.2, 0.488); drop.scale.set(1, 1.2, 0.5);
+    // wire handle and its ears
+    var handle = add(new THREE.TorusGeometry(0.535, 0.013, 8, 48, Math.PI), tin, 0.26); handle.rotation.x = Math.PI / 2 + 0.95; handle.rotation.z = Math.PI;
+    [-0.535, 0.535].forEach(function (x) { var e = add(new THREE.SphereGeometry(0.04, 14, 10), tin, 0.26); e.position.x = x; });
+    can.rotation.y = -0.35;
+
+    var out = hexList.map(function (hex) {
+      paint.color.set(hex); label.color.set(hex);
+      renderer.render(scene, cam);
+      return canvas.toDataURL("image/png");
+    });
+    pm.dispose(); renderer.dispose();
+    if (renderer.forceContextLoss) renderer.forceContextLoss();
+    return out;
+  }
+
   global.MarvScenes = {
     list: ORDER.map(function (id) { return { id: id, name: SCENES[id].name, area: SCENES[id].area, blurb: SCENES[id].blurb, sample: SCENES[id].sample }; }),
-    createViewer: createViewer
+    createViewer: createViewer,
+    renderCans: renderCans
   };
 })(window);
