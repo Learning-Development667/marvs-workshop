@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#13294b">
 <link rel="icon" type="image/png" href="brand/icon-192.png">
 <link rel="apple-touch-icon" href="brand/icon-180.png">
-<script src="js/app.js?v=0.11"></script>
+<script src="js/app.js?v=0.12"></script>
 <title>Reference card</title>
-<link rel="stylesheet" href="css/workshop.css?v=0.11">
+<link rel="stylesheet" href="css/workshop.css?v=0.12">
 <style>
   .refcard {
     display: grid; grid-template-columns: repeat(10, 1fr); row-gap: 1.6mm; width: 100%; padding: 4mm; background: #ffffff;
@@ -20,6 +20,10 @@
   .sheet { display: flex; flex-direction: column; gap: 10mm; }
   .sheet figure { margin: 0; width: 100%; max-width: 168mm; min-width: 0; }
   .sheet figcaption { font-size: 9pt; color: #555; margin-top: 2mm; }
+  #btn-pdf { margin-top: 10px; }
+  .pdf-note { margin: 8px 0 0; font-size: 14px; color: var(--ink-2); }
+  .pdf-note:empty { display: none; }
+  #pdf-status { color: var(--green-ink); font-weight: bold; }
   ol.steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 15px; }
   @page { size: A4 portrait; margin: 15mm; }
   @media print {
@@ -49,6 +53,9 @@
       <li>In Marv's Photo Match, press "The printed card is in this photo", then tap the dark square at each end of the card.</li>
     </ol>
     <button class="btn-main" type="button" id="btn-print">Print the card</button>
+    <button class="btn-quiet" type="button" id="btn-pdf">Download the card as a PDF</button>
+    <p class="pdf-note" id="pdf-note">For a professional printer, or to print later. The PDF prints at true size and has a second page listing every patch's colour for the printer to match and measure.</p>
+    <p class="pdf-note" id="pdf-status" role="status"></p>
     <p class="banner warn"><strong>Printer error carries into every reading.</strong> The app expects each patch to be exactly the colour it was designed to be. Unless the card is printed by a professional, colour-managed printer, it will not be: office and home printers are off by a noticeable amount, and that error is added to every corrected colour. For real use, have the card printed professionally and every patch measured with a spectrophotometer, then those measured values go into the app.</p>
   </div>
 
@@ -57,8 +64,9 @@
   </div>
 </div>
 
-<script src="js/colour.js?v=0.11"></script>
-<script src="js/refcard.js?v=0.11"></script>
+<script src="js/colour.js?v=0.12"></script>
+<script src="js/refcard.js?v=0.12"></script>
+<script src="js/cardpdf.js?v=0.12"></script>
 <script>
 (function () {
   "use strict";
@@ -82,6 +90,30 @@
     fig.appendChild(strip); fig.appendChild(cap); sheet.appendChild(fig);
   }
   document.getElementById("btn-print").addEventListener("click", function () { window.print(); });
+
+  /* The PDF. On a phone, the share sheet is the reliable way to keep a file (Save to
+     Files, Mail, WhatsApp, a printer's app); a home-screen app on iPhone can get stuck
+     on a plain download. Computers download it. */
+  var status = document.getElementById("pdf-status");
+  function download(blob) {
+    var url = URL.createObjectURL(blob), a = document.createElement("a");
+    a.href = url; a.download = window.MarvCardPdf.fileName;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 30000);
+    status.textContent = "Done. The PDF is in your downloads as " + window.MarvCardPdf.fileName + ".";
+  }
+  document.getElementById("btn-pdf").addEventListener("click", function () {
+    var blob = new Blob([window.MarvCardPdf.build("version " + window.MarvApp.version)], { type: "application/pdf" });
+    status.textContent = "";
+    var file = null;
+    try { file = new File([blob], window.MarvCardPdf.fileName, { type: "application/pdf" }); } catch (e) { /* older browser */ }
+    var phone = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+    if (phone && file && navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file], title: "Magicman reference card" })
+        .then(function () { status.textContent = "Done. Choose Save to Files to keep it, or send it straight to the printer."; })
+        .catch(function (e) { if (!e || e.name !== "AbortError") download(blob); });
+    } else download(blob);
+  });
 })();
 </script>
 </body>
