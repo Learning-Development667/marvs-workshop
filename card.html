@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#13294b">
 <link rel="icon" type="image/png" href="brand/icon-192.png">
 <link rel="apple-touch-icon" href="brand/icon-180.png">
-<script src="js/app.js?v=0.12"></script>
+<script src="js/app.js?v=0.13"></script>
 <title>Reference card</title>
-<link rel="stylesheet" href="css/workshop.css?v=0.12">
+<link rel="stylesheet" href="css/workshop.css?v=0.13">
 <style>
   .refcard {
     display: grid; grid-template-columns: repeat(10, 1fr); row-gap: 1.6mm; width: 100%; padding: 4mm; background: #ffffff;
@@ -20,6 +20,9 @@
   .sheet { display: flex; flex-direction: column; gap: 10mm; }
   .sheet figure { margin: 0; width: 100%; max-width: 168mm; min-width: 0; }
   .sheet figcaption { font-size: 9pt; color: #555; margin-top: 2mm; }
+  .smallprint { margin: 0 0 6mm; font-size: 9pt; line-height: 1.45; color: #555; max-width: 168mm; }
+  [data-theme="dark"] .smallprint { color: var(--ink-2); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .smallprint { color: var(--ink-2); } }
   #btn-pdf { margin-top: 10px; }
   .pdf-note { margin: 8px 0 0; font-size: 14px; color: var(--ink-2); }
   .pdf-note:empty { display: none; }
@@ -31,6 +34,7 @@
     .screen-only { display: none !important; }
     .wrap { padding: 0; max-width: none; }
     .card { box-shadow: none; padding: 0; background: none; }
+    .smallprint { color: #555 !important; }
   }
 </style>
 </head>
@@ -60,13 +64,14 @@
   </div>
 
   <div class="card">
+    <p class="smallprint">Why three cards? One card is a strip about 17 cm by 5 cm, so three fit on one sheet. You only need one in each photo; the others are spares, for a second van or for when one gets dirty or creased.</p>
     <div class="sheet" id="sheet"></div>
   </div>
 </div>
 
-<script src="js/colour.js?v=0.12"></script>
-<script src="js/refcard.js?v=0.12"></script>
-<script src="js/cardpdf.js?v=0.12"></script>
+<script src="js/colour.js?v=0.13"></script>
+<script src="js/refcard.js?v=0.13"></script>
+<script src="js/cardpdf.js?v=0.13"></script>
 <script>
 (function () {
   "use strict";

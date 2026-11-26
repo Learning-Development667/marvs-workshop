@@ -73,7 +73,8 @@
   function pageOne(version) {
     var s = text(LEFT, 21, 15, "Magicman reference card " + K.CARD.id, true, [19, 41, 75]);
     s += text(LEFT, 27.5, 9.5, "Print at 100% (actual size) on matt paper or card. Do not scale to fit. Cut out one card along its grey edge.");
-    var t = 36;
+    s += text(LEFT, 32.5, 7.5, "Why three cards? Three fit on one sheet. You only need one in each photo; the others are spares, for a second van or for when one gets dirty.", false, [100, 100, 100]);
+    var t = 38;
     for (var i = 0; i < 3; i++) {
       s += card(LEFT, t);
       s += text(LEFT, t + CARD_H + 4.5, 8, "Magicman reference card " + K.CARD.id + ". Keep flat, clean and out of sunlight.", false, [85, 85, 85]);

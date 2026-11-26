@@ -3,7 +3,7 @@
    inside their own picture. */
 (function () {
   "use strict";
-  var VERSION = "0.12", BUILT = "26 Nov 2026";
+  var VERSION = "0.13", BUILT = "26 Nov 2026";
   /* Light, dark, or follow the phone. Set before the page draws so it never flashes. */
   var THEME_KEY = "marvs-workshop-theme";
   function getTheme() { try { return localStorage.getItem(THEME_KEY) || "system"; } catch (e) { return "system"; } }
