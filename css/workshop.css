@@ -2,6 +2,11 @@
    Cream paper, navy ink, raised cards, pill buttons with a Magicman green edge
    and a soft gloss. Colours are the brand guide's: Wasabi, Crow Black Blue and
    Lone Hunter. Verdana throughout, as the owner asked. */
+/* Verdana is not installed on Android phones, so a close free match (DejaVu Sans,
+   cut down to the characters the app uses) is bundled for them. Devices that have
+   Verdana still use it. Licence: fonts/LICENSE-DejaVu.txt */
+@font-face { font-family: "Workshop Sans"; src: url("../fonts/workshop-sans.woff") format("woff"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Workshop Sans"; src: url("../fonts/workshop-sans-Bold.woff") format("woff"); font-weight: 700; font-display: swap; }
 :root {
   --bg: #f6f4ef;
   --surface-1: #fffefa;
@@ -28,7 +33,7 @@
   --stop-ink: #8a2a1c;
   --logo-on-light: block;
   --logo-on-dark: none;
-  --font: Verdana, Geneva, "DejaVu Sans", Tahoma, sans-serif;
+  --font: Verdana, "Workshop Sans", Geneva, Tahoma, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {

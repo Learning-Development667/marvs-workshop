@@ -35,7 +35,7 @@
 
   <div class="card">
     <h2>1. Card first, then the photo</h2>
-    <p class="note">Lay the reference card flat on the surface next to the damage, in the same light, then take the photo. Until the printed card arrives, the sample lets you slide a virtual card in before the photo is taken.</p>
+    <p class="note">Go up to the damage. Lay the reference card flat beside it, in the same light, then take the photo close up. Until the printed card arrives, the sample lets you slide a virtual card in before the photo is taken.</p>
     <div class="choices">
       <button class="btn-main" type="button" id="btn-camera">Take a photo</button>
       <div class="two">
@@ -102,6 +102,12 @@
   function setCanvas(w, h) { photo.width = overlay.width = w; photo.height = overlay.height = h; }
   function defaultCard() {
     var w = photo.width, h = photo.height, len = w * 0.5;
+    if (sample && sample.damage) {                     // a close-up: the card lies just beside the damage
+      var d = sample.damage; len = w * 0.56;
+      var y = d.y + h * 0.26 < h * 0.9 ? d.y + h * 0.26 : d.y - h * 0.26;
+      var x0 = Math.max(w * 0.06, Math.min(w * 0.94 - len, d.x - len / 2));
+      return { a: { x: x0, y: y }, b: { x: x0 + len, y: y } };
+    }
     return { a: { x: w * 0.09, y: h * 0.86 }, b: { x: w * 0.09 + len, y: h * 0.86 } };
   }
   function setMode(m) {
@@ -120,23 +126,34 @@
     stage();
     $("work").scrollIntoView({ behavior: "smooth", block: "start" });
   }
+  function showLoaded(source, w, h) {
+    var d = fit(w, h);
+    setCanvas(d[0], d[1]);
+    pctx.drawImage(source, 0, 0, d[0], d[1]);
+    sample = null; $("tag").hidden = true;
+    begin();
+  }
+  function loadFailed() {
+    $("load-error").textContent = "That file could not be opened as a picture. Try a JPEG or PNG photo.";
+    $("load-error").hidden = false;
+  }
+  function loadWithImage(file) {
+    var url = URL.createObjectURL(file), img = new Image();
+    img.onload = function () { showLoaded(img, img.naturalWidth, img.naturalHeight); URL.revokeObjectURL(url); };
+    img.onerror = function () { URL.revokeObjectURL(url); loadFailed(); };
+    img.src = url;
+  }
+  /* A phone camera photo can be 50 megapixels. Decoding that at full size can run an
+     Android phone out of memory, so where the browser allows it the photo is shrunk
+     while it is decoded, the right way up. */
   function loadFile(file) {
     if (!file) return;
-    var url = URL.createObjectURL(file), img = new Image();
-    img.onload = function () {
-      var d = fit(img.naturalWidth, img.naturalHeight);
-      setCanvas(d[0], d[1]);
-      pctx.drawImage(img, 0, 0, d[0], d[1]);
-      URL.revokeObjectURL(url);
-      sample = null; $("tag").hidden = true;
-      begin();
-    };
-    img.onerror = function () {
-      URL.revokeObjectURL(url);
-      $("load-error").textContent = "That file could not be opened as a picture. Try a JPEG or PNG photo.";
-      $("load-error").hidden = false;
-    };
-    img.src = url;
+    $("load-error").hidden = true;
+    if (window.createImageBitmap) {
+      createImageBitmap(file, { resizeWidth: MAX_SIDE, resizeQuality: "high", imageOrientation: "from-image" })
+        .then(function (bmp) { showLoaded(bmp, bmp.width, bmp.height); if (bmp.close) bmp.close(); })
+        .catch(function () { loadWithImage(file); });
+    } else loadWithImage(file);
   }
   $("btn-camera").addEventListener("click", function () { $("in-camera").click(); });
   $("btn-file").addEventListener("click", function () { $("in-file").click(); });
@@ -206,15 +223,27 @@
       if (!viewer) viewer = window.MarvScenes.createViewer($("render"), { pixelRatio: 1 });
       viewer.resize();
       var list = window.MarvScenes.list, scene = list[Math.floor(Math.random() * list.length)];
+      // A technician photographs the damage close up, so the sample is a close shot of one damage spot.
       viewer.show(scene.id, 0);
-      viewer.setColour(hsl(Math.random() * 360, 8 + Math.random() * 44, 22 + Math.random() * 50));
-      viewer.setPatch(null);
+      // Only damage on a surface broad enough to fill a close-up photo, as on a real job.
+      var labels = viewer.spots(), broad = [];
+      labels.forEach(function (l, i) { if (!/frame|architrave|pilaster|post|skirting|header|rim|upstand|rail|^sill$/i.test(l)) broad.push(i); });
+      if (!broad.length) broad = labels.map(function (l, i) { return i; });
+      var si = broad[Math.floor(Math.random() * broad.length)];
+      viewer.setSpot(si);
+      var surface = hsl(Math.random() * 360, 8 + Math.random() * 44, 22 + Math.random() * 50);
+      viewer.setColour(surface);
+      // bare filler where the damage is, always clearly lighter or darker than the surface
+      viewer.setPatch(C.rgbToLab(C.fromHex(surface))[0] > 56 ? "#6f6a60" : "#e4e0d7");
+      viewer.zoom(3.2);
+      var at = viewer.spotScreen() || { x: 0.5, y: 0.5 };
       var img = new Image();
       img.onload = function () {
         setCanvas(1200, 900);
         var base = canvas2d(1200, 900);
         base.drawImage(img, 0, 0, 1200, 900);
-        sample = { base: base, truth: canvas2d(1200, 900), cast: CASTS[Math.floor(Math.random() * CASTS.length)], taken: false, name: scene.name.toLowerCase() };
+        var reach = measureDamage(base, at.x * 1200, at.y * 900);
+        sample = { base: base, truth: canvas2d(1200, 900), cast: CASTS[Math.floor(Math.random() * CASTS.length)], taken: false, name: scene.name.toLowerCase() + ", " + labels[si].toLowerCase(), damage: { x: at.x * 1200, y: at.y * 900, r: reach } };
         begin();
         btn.disabled = false; btn.textContent = "Try a sample";
       };
@@ -320,22 +349,56 @@
     var ax = card.a.x, ay = card.a.y, bx = card.b.x, by = card.b.y, len = Math.hypot(bx - ax, by - ay);
     if (len < 20) return null;
     var nx = -(by - ay) / len, ny = (bx - ax) / len, pitch = len / (K.CARD.patches.length + 1);
-    var size = Math.round(surfaceSize() * 1.5), best = null;
-    [-1, 1].forEach(function (side) {
-      [1.9, 2.8].forEach(function (far) {
-        [0.15, 0.3, 0.45, 0.6, 0.75, 0.9].forEach(function (t) {
-          var x = ax + (bx - ax) * t + nx * pitch * far * side, y = ay + (by - ay) * t + ny * pitch * far * side;
-          if (x < size || y < size || x > photo.width - size || y > photo.height - size) return;
-          var d = pctx.getImageData(Math.round(x - size / 2), Math.round(y - size / 2), size, size).data, n = 0, sum = 0, sq = 0;
-          for (var i = 0; i < d.length; i += 16) { var l = 0.3 * d[i] + 0.59 * d[i + 1] + 0.11 * d[i + 2]; sum += l; sq += l * l; n++; }
-          var mean = sum / n, sd = Math.sqrt(Math.max(0, sq / n - mean * mean));
-          if (mean < 16 || mean > 246) return;
-          var score = sd + (far > 2 ? 0.6 : 0);            // prefer the nearer row when it is just as even
-          if (!best || score < best.score) best = { x: x, y: y, score: score };
-        });
-      });
+    var size = Math.round(surfaceSize() * 1.5), points = [];
+    // beside the card, both sides
+    [-1, 1].forEach(function (side) { [1.7, 2.5].forEach(function (far) { [0.15, 0.3, 0.45, 0.6, 0.75, 0.9].forEach(function (t) {
+      points.push({ x: ax + (bx - ax) * t + nx * pitch * far * side, y: ay + (by - ay) * t + ny * pitch * far * side, near: far < 2 });
+    }); }); });
+    // around the damage, where the app knows where that is
+    if (sample && sample.damage) {
+      var d = sample.damage;
+      [d.r + size * 1.1, d.r + size * 2.4].forEach(function (rad, ring) { for (var k = 0; k < 12; k++) {
+        var a = k / 12 * Math.PI * 2; points.push({ x: d.x + Math.cos(a) * rad, y: d.y + Math.sin(a) * rad, near: ring === 0, byDamage: true });
+      } });
+    }
+    var cands = [];
+    points.forEach(function (pt) {
+      var x = pt.x, y = pt.y;
+      if (x < size || y < size || x > photo.width - size || y > photo.height - size) return;
+      if (sample && sample.damage && Math.hypot(x - sample.damage.x, y - sample.damage.y) < sample.damage.r + size * 0.6) return;   // not the damage itself
+      // not the card itself
+      var t = Math.max(0, Math.min(1, ((x - ax) * (bx - ax) + (y - ay) * (by - ay)) / (len * len)));
+      if (Math.hypot(x - (ax + t * (bx - ax)), y - (ay + t * (by - ay))) < pitch * 1.25) return;
+      var px = pctx.getImageData(Math.round(x - size / 2), Math.round(y - size / 2), size, size).data, n = 0, sum = 0, sq = 0, c = [0, 0, 0];
+      for (var i = 0; i < px.length; i += 16) { var l = 0.3 * px[i] + 0.59 * px[i + 1] + 0.11 * px[i + 2]; sum += l; sq += l * l; c[0] += px[i]; c[1] += px[i + 1]; c[2] += px[i + 2]; n++; }
+      var mean = sum / n;
+      if (mean < 16 || mean > 246) return;
+      cands.push({ x: x, y: y, rgb: [c[0] / n, c[1] / n, c[2] / n], sd: Math.sqrt(Math.max(0, sq / n - mean * mean)), near: pt.near, byDamage: !!pt.byDamage });
     });
-    return best ? { x: best.x, y: best.y } : null;
+    if (!cands.length) return null;
+    // Which colour do most of these patches share? That is taken to be the damaged surface.
+    cands.forEach(function (c) {
+      c.votes = cands.filter(function (o) { return Math.abs(o.rgb[0] - c.rgb[0]) + Math.abs(o.rgb[1] - c.rgb[1]) + Math.abs(o.rgb[2] - c.rgb[2]) < 54; })
+        .reduce(function (v, o) { return v + (o.byDamage ? (o.near ? 3 : 2) : 1); }, 0);   // patches round the damage count most
+    });
+    cands.sort(function (p, q) { return q.votes - p.votes || (q.near - p.near) || p.sd - q.sd; });
+    return { x: cands[0].x, y: cands[0].y };
+  }
+  // How far the damage reaches from its centre in a sample picture, found by its colour.
+  function measureDamage(ctx, cx, cy) {
+    var w = ctx.canvas.width, h = ctx.canvas.height, d = ctx.getImageData(0, 0, w, h).data;
+    var i0 = (Math.round(cy) * w + Math.round(cx)) * 4, ref = [d[i0], d[i0 + 1], d[i0 + 2]], reach = 20;
+    for (var k = 0; k < 24; k++) {
+      var a = k / 24 * Math.PI * 2, r = 0;
+      for (; r < 420; r += 3) {
+        var x = Math.round(cx + Math.cos(a) * r), y = Math.round(cy + Math.sin(a) * r);
+        if (x < 0 || y < 0 || x >= w || y >= h) break;
+        var i = (y * w + x) * 4;
+        if (Math.abs(d[i] - ref[0]) + Math.abs(d[i + 1] - ref[1]) + Math.abs(d[i + 2] - ref[2]) > 45) break;
+      }
+      reach = Math.max(reach, r);
+    }
+    return Math.min(reach, 240);
   }
   overlay.addEventListener("pointerup", drop);
   overlay.addEventListener("pointercancel", drop);
@@ -439,7 +502,10 @@
     }
     var job = {
       target: answer.target.map(function (x) { return Math.round(x); }), corrected: !!answer.fit,
-      image: t.canvas.toDataURL("image/jpeg", 0.82), spot: { x: spot.x / w, y: spot.y / h }
+      image: t.canvas.toDataURL("image/jpeg", 0.82),
+      // where the mix is shown: on the damage itself when the app knows where it is, otherwise where the colour was read
+      spot: sample && sample.damage ? { x: sample.damage.x / w, y: sample.damage.y / h } : { x: spot.x / w, y: spot.y / h },
+      r: sample && sample.damage ? Math.min(0.4, (sample.damage.r + 14) / Math.min(w, h)) : 0.042
     };
     try { sessionStorage.setItem("marvs-photo-job", JSON.stringify(job)); }
     catch (e) {

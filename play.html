@@ -213,7 +213,7 @@
      the one surface and never spills onto a wall, a frame or the reference card. */
   var pmask = null;
   function buildMask(pv) {
-    var w = pv.width, h = pv.height, cx = photoJob.spot.x * w, cy = photoJob.spot.y * h, r = Math.min(w, h) * 0.042;
+    var w = pv.width, h = pv.height, cx = photoJob.spot.x * w, cy = photoJob.spot.y * h, r = Math.min(w, h) * (photoJob.r || 0.042);
     var x0 = Math.max(0, Math.floor(cx - r * 1.8)), y0 = Math.max(0, Math.floor(cy - r * 1.5));
     var bw = Math.min(w - x0, Math.ceil(r * 3.6)), bh = Math.min(h - y0, Math.ceil(r * 3));
     var src = pv.getContext("2d").getImageData(x0, y0, bw, bh).data;
@@ -259,7 +259,7 @@
     $("job-sub").textContent = photoJob.corrected ? "Colour read with the reference card" : "Colour as the camera saw it";
     $("d-target").style.background = C.toHex(st.job.target);
     $("result").hidden = true; $("btn-next").hidden = true; $("btn-level").hidden = true; $("bench").hidden = false;
-    say("focussed", "Mix until the patch on your photo disappears. Ask me whenever you like.");
+    say("focussed", "Mix until the damage in your photo disappears. Ask me whenever you like.");
     renderMix(); renderStatus();
   }
 
@@ -493,7 +493,7 @@
     $("stage").hidden = true; $("zoomer").hidden = true; $("photo-view").hidden = false;
     $("btn-skip").hidden = true; $("board-card").hidden = true;
     document.querySelector("header h1").textContent = "Mix to your photo";
-    document.querySelector("header p").textContent = "Mix until the patch on your photo disappears into the surface.";
+    document.querySelector("header p").textContent = "Mix until the damage in your photo disappears into the surface.";
     document.querySelector("a.back").setAttribute("href", "photo.html");
     document.querySelector("a.back").lastChild.textContent = "Back to the photo";
     pimg = new Image(); pimg.onload = function () { renderMix(); }; pimg.src = photoJob.image;

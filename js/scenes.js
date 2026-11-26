@@ -752,6 +752,14 @@
       applyColours(); render();
     }
     function spots() { return kit ? kit.spots.map(function (sp) { return sp.label; }) : []; }
+    // Where the active damage spot sits in the picture, as fractions of its width and height.
+    function spotScreen() {
+      var sp = kit && kit.spots[spotIndex];
+      if (!sp) return null;
+      pivot.updateMatrixWorld(true); camera.updateMatrixWorld(true);
+      var p = sp.mesh.getWorldPosition(new THREE.Vector3()).project(camera);
+      return { x: (p.x + 1) / 2, y: (1 - p.y) / 2 };
+    }
     function setColour(hex) { colour.set(hex); applyColours(); render(); }
     function setPatch(hex) { patchColour = hex ? new THREE.Color(hex) : null; applyColours(); render(); }
     function snapshot(type, quality) { render(); return canvas.toDataURL(type || "image/jpeg", quality || 0.85); }
@@ -787,7 +795,7 @@
     }, { passive: false });
 
     return {
-      show: show, setColour: setColour, setPatch: setPatch, setSpot: setSpot, spots: spots,
+      show: show, setColour: setColour, setPatch: setPatch, setSpot: setSpot, spots: spots, spotScreen: spotScreen,
       zoom: setZoom, getZoom: function () { return zoom; },
       resize: resize, snapshot: snapshot, turn: function (r) { rot = r; render(); }, current: function () { return current; }
     };

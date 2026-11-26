@@ -34,7 +34,9 @@ Open `index.html` in a browser to run it. There is no build step.
 ## Design rules
 
 - **Brand:** Wasabi `#aed284`, Crow Black Blue `#13294b`, Lone Hunter `#93c847`, from the Magicman brand guide. The logo is not to be rotated, skewed, recoloured or placed on a similar colour.
-- **Font:** Verdana throughout, at the owner's request. The brand guide lists Helvetica Bold and Open Sans. Verdana is not installed on Android, where a fallback shows.
+- **Font:** Verdana throughout, at the owner's request. The brand guide lists Helvetica Bold and Open Sans. Verdana is not installed on Android, so `fonts/` carries a cut-down copy of DejaVu Sans, a free font close to Verdana, which Android uses instead. Licence in `fonts/LICENSE-DejaVu.txt`.
+- **Android first.** Most technicians use Android. Every screen is checked on Pixel 7 and Galaxy S9+ phone profiles. Camera photos are shrunk while they are decoded so a large photo cannot run a phone out of memory.
+- **The camera** is the phone's own camera app, opened from the Take a photo button. It only works when the app is served from its own web address (GitHub Pages), not inside a preview.
 - **Look:** cream paper, navy ink, raised cards, pill buttons with a Magicman green edge and a soft gloss.
 - **Wording:** it is not called a training app.
 
