@@ -7,7 +7,7 @@
   var KEY = "marvs-workshop-tour-done";
   var STEPS = [
     { title: "Welcome to Marv's Workshop", text: "A quick tour of where everything is. It takes about half a minute, and you can skip it at any time.", target: null },
-    { title: "Marv's Photo Match", text: "On the job. Photograph the damage with the reference card beside it to read its true colour, mix to it, or find which van tints to use.", target: 'a.door[href="photo.html"]' },
+    { title: "Marv's Photo Match", text: "On the job. Photograph the damage with the reference card beside it, tap the area, and get its colour and the van tints to mix it. Or mix to the photo yourself.", target: 'a.door[href="photo.html"]' },
     { title: "Marv's Colour Lab", text: "Sharpen your eye. Mix repairs on 3D scenes until they disappear, at four levels, with a leaderboard.", target: 'a.door[href="play.html"]' },
     { title: "Marv's Mix Bench", text: "At the van. Scale a recipe to the amount you need, measure tints too light to weigh, and fix a mix that is off.", target: 'a.door[href="bench.html"]' },
     { title: "Settings", text: "Light or dark mode, bigger text, and video guides for every part of the app. You can take this tour again from there.", target: "a.cog" },

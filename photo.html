@@ -10,9 +10,9 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" href="brand/icon-192.png">
 <link rel="apple-touch-icon" href="brand/icon-180.png">
-<script src="js/app.js?v=0.13"></script>
+<script src="js/app.js?v=0.14"></script>
 <title>Marv's Photo Match</title>
-<link rel="stylesheet" href="css/workshop.css?v=0.13">
+<link rel="stylesheet" href="css/workshop.css?v=0.14">
 <style>
   .photo-stage { position: relative; border-radius: 16px; overflow: hidden; background: #cfc9be; box-shadow: inset 0 0 0 1px rgba(19, 41, 75, 0.18); line-height: 0; }
   .photo-stage canvas { display: block; width: 100%; height: auto; }
@@ -58,12 +58,12 @@
     <div class="logo"><img class="on-light" src="brand/logo.svg" alt="Magicman: repair, renew, restore"><img class="on-dark" src="brand/logo-white.svg" alt="Magicman: repair, renew, restore"></div>
     <span class="eyebrow">Marv's Workshop</span>
     <h1>Marv's Photo Match</h1>
-    <p id="intro">Put the reference card on the surface, take the photo, then mix to the colour the app reads.</p>
+    <p id="intro">Take a photo, tap the area you want, and the app tells you the colour and which van tints to use.</p>
   </header>
 
   <div class="tabs2" role="tablist" aria-label="What to do with the photo">
-    <button type="button" role="tab" id="tab-mix" aria-selected="true">Mix to a photo</button>
-    <button type="button" role="tab" id="tab-find" aria-selected="false">Find the colour</button>
+    <button type="button" role="tab" id="tab-find" aria-selected="true">Find the colour</button>
+    <button type="button" role="tab" id="tab-mix" aria-selected="false">Mix to a photo</button>
   </div>
 
   <div class="card">
@@ -129,9 +129,9 @@
 
 <canvas class="offstage" id="render" aria-hidden="true"></canvas>
 
-<script src="js/colour.js?v=0.13"></script>
-<script src="js/refcard.js?v=0.13"></script>
-<script src="js/mix.js?v=0.13"></script>
+<script src="js/colour.js?v=0.14"></script>
+<script src="js/refcard.js?v=0.14"></script>
+<script src="js/mix.js?v=0.14"></script>
 <script>
 (function () {
   "use strict";
@@ -146,7 +146,7 @@
   var sample = null;               // a made-up sample: { base, truth, cast, taken }
   var drag = null, answer = null;  // answer: { target, fit } once a colour has been read
   var spotAuto = false;            // true while the reading spot is the one the app chose
-  var purpose = "mix";             // "mix": mix to the photo yourself. "find": the app names the colour and suggests tints.
+  var purpose = "find";             // "mix": mix to the photo yourself. "find": the app names the colour and suggests tints.
   var M = window.MarvMix;
   function setPurpose(p) {
     purpose = p;
@@ -641,7 +641,7 @@
     }
     location.href = "play.html#photo";
   });
-  if (location.hash === "#find") setPurpose("find");
+  if (location.hash === "#mix") setPurpose("mix");
 })();
 </script>
 </body>

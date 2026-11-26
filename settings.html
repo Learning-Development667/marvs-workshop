@@ -10,9 +10,9 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" href="brand/icon-192.png">
 <link rel="apple-touch-icon" href="brand/icon-180.png">
-<script src="js/app.js?v=0.13"></script>
+<script src="js/app.js?v=0.14"></script>
 <title>Settings</title>
-<link rel="stylesheet" href="css/workshop.css?v=0.13">
+<link rel="stylesheet" href="css/workshop.css?v=0.14">
 <style>
   .choice { width: 100%; display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 2px 14px; align-items: center; padding: 14px 4px; border: 0; border-bottom: 1px solid var(--hair); background: none; text-align: left; color: var(--ink); min-height: 56px; }
   .choice:last-child { border-bottom: 0; }
@@ -107,10 +107,10 @@
   "use strict";
   var $ = function (id) { return document.getElementById(id); };
   var GUIDES = [
-    { id: "photo-mix", title: "Marv's Photo Match: mix to a photo", what: "Read a surface's colour from a photo, with the reference card, and mix to it.",
-      steps: ["Open Marv's Photo Match.", "Lay the reference card flat beside the damage and take the photo close up.", "If the card is in the photo, tap \"The card is in this photo\", then tap the dark square at each end.", "The app reads the surface beside the card. Tap a different spot if it chose the wrong surface.", "Tap \"Mix this colour\", add tints, and check the match until the damage disappears."] },
     { id: "photo-find", title: "Marv's Photo Match: find the colour", what: "Tap an area of a photo to name its colour and get a suggested mix of van tints.",
-      steps: ["Open Marv's Photo Match and choose the \"Find the colour\" tab.", "Take the photo with the reference card beside the area.", "Mark the card, then tap the area you want.", "Read the colour's name and the suggested tints in parts. Very strong tints are flagged.", "Treat the mix as a starting point and test it on a dab."] },
+      steps: ["Open Marv's Photo Match. \"Find the colour\" is the first tab.", "Take the photo with the reference card beside the area.", "Mark the card, then tap the area you want.", "Read the colour's name and the suggested tints in parts. Very strong tints are flagged.", "Treat the mix as a starting point and test it on a dab."] },
+    { id: "photo-mix", title: "Marv's Photo Match: mix to a photo", what: "Read a surface's colour from a photo, with the reference card, and mix to it.",
+      steps: ["Open Marv's Photo Match and choose the \"Mix to a photo\" tab.", "Lay the reference card flat beside the damage and take the photo close up.", "If the card is in the photo, tap \"The card is in this photo\", then tap the dark square at each end.", "The app reads the surface beside the card. Tap a different spot if it chose the wrong surface.", "Tap \"Mix this colour\", add tints, and check the match until the damage disappears."] },
     { id: "colour-lab", title: "Marv's Colour Lab", what: "Practise matching colours on 3D repair scenes, at four levels.",
       steps: ["Open Marv's Colour Lab.", "Tap the level line to choose Trainee, Technician, Senior Technician or Master Technician.", "Turn the scene by dragging, and pinch to zoom in on the damage.", "Tap the paint cans to add drops. Trainees see a live match bar.", "Press \"Check the match\". Three attempts a job, five jobs a round."] },
     { id: "mix-bench", title: "Marv's Mix Bench", what: "Scale a recipe to the amount you need, and fix a mix that is off.",
@@ -119,7 +119,7 @@
       steps: ["In Settings or Photo Match, open \"Print the reference card\".", "Print at 100% or actual size, in colour, on matt paper. Or press \"Download the card as a PDF\" to save it or send it to a professional printer.", "Cut out one card.", "On the job, lay it flat beside the damage, in the same light, before taking the photo.", "Keep it clean, flat and out of sunlight so its greys stay true."] }
   ];
   // A menu of guides; tapping one opens it on its own, with the video and the steps.
-  var SECTION = { "photo-mix": "Photo Match", "photo-find": "Photo Match", "colour-lab": "Colour Lab", "mix-bench": "Mix Bench", "ref-card": "Reference card" };
+  var SECTION = { "photo-find": "Photo Match", "photo-mix": "Photo Match", "colour-lab": "Colour Lab", "mix-bench": "Mix Bench", "ref-card": "Reference card" };
   var SHORT = { "photo-mix": "Mix to a photo", "photo-find": "Find the colour", "colour-lab": "Practise matching", "mix-bench": "Scale and fix a mix", "ref-card": "Print and use the card" };
   var box = $("guides");
   // The tour of the home screen comes first.
