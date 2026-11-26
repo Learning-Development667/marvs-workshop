@@ -11,10 +11,13 @@ Colour matching for Magicman technicians. It combines two earlier projects, MARV
 
 ## Status
 
-Early. Photo matching and the 3D scenes each work on their own page. The mixing, the levels and scoring, leaderboards and the small-mix tools are not built yet, and the pages are not yet joined into one app.
+In progress. Photo matching and the colour match game each work on their own page. Still to do: mixing to a colour read from a photo, a shared leaderboard, the small-mix tools from Mix Bench, and joining the pages into one app.
 
 | Path | What it is |
 |---|---|
+| `play.html` | Colour match: mix a patch to match a 3D scene. Four levels, five jobs a round, three attempts a job, hints from MARV, scores and a leaderboard kept on the phone |
+| `js/mix.js` | Paint mixing (three-channel Kubelka-Munk), the levels, job generation, hints. Estimated tint colours, not measured |
+| `tests/mix-test.js` | Checks mixes behave like paint and every generated job can be solved. Run with `node tests/mix-test.js` |
 | `photo.html` | Match from a photo: slide a reference card into the picture, tap the surface, read its corrected colour |
 | `js/colour.js` | Colour maths: CIELAB, the ΔE2000 difference, and the camera correction fitted from the reference card |
 | `js/refcard.js` | The reference card: its patches and how it is read from a photo. Provisional until a printed card is measured |
@@ -39,5 +42,7 @@ Open `examples.html` in a browser to run it. There is no build step.
 - Sample photos are simulated. In the feasibility tests real photos came out between 4 and 10 on the ΔE2000 scale, against the 1 to 2 a repair needs.
 - Target colours are generated in code and are not exact RAL values.
 - The 3D scenes are simple models built for this app, not photographs.
-- In `examples.html` a slider stands in for the player's mixing. The real mixing model is still to be built, and no measured data exists for how the van tints behave when mixed.
-- Pass marks are derived from Colour Lab's tolerances and are open to tuning.
+- **The mixing is an estimate.** It uses the Kubelka-Munk rule on three colour channels with estimated colours for the eleven tints. No measured data exists for how the van tints behave, so it teaches which way a tint pushes a mix; it does not give recipes.
+- **The leaderboard is local.** Scores are kept on the phone, and rows marked "sample" are made up. A shared board needs somewhere to store scores, which is undecided.
+- In `examples.html` a slider stands in for the player's mixing.
+- Pass marks follow Colour Lab's order of difficulty (85%, 88%, 92% and 96%) and are open to tuning.

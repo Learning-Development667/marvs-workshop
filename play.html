@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#13294b">
+<title>Colour match</title>
+<link rel="stylesheet" href="css/workshop.css">
+<style>
+  .stage { position: relative; border-radius: 16px; overflow: hidden; background: #cfc9be; box-shadow: inset 0 0 0 1px rgba(19, 41, 75, 0.18); }
+  .stage canvas { display: block; width: 100%; aspect-ratio: 4 / 3; cursor: grab; }
+  .stage-label { position: absolute; left: 12px; top: 12px; background: rgba(12, 28, 53, 0.82); color: #fff; font-size: 13px; font-weight: bold; padding: 5px 12px; border-radius: 999px; }
+  .fail { padding: 28px 18px; text-align: center; color: #13294b; margin: 0; }
+  .zoomer { position: absolute; left: 12px; bottom: 12px; display: flex; gap: 8px; }
+  .zb { width: 44px; height: 44px; border-radius: 50%; border: 2px solid transparent; padding: 0; background: linear-gradient(180deg, #fffefa, #f3ecdd) padding-box, var(--rim) border-box; color: #13294b; font: bold 22px/1 var(--font); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .zb:disabled { opacity: 0.45; cursor: default; }
+
+  .status { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .status div { background: var(--sunken); border-radius: 12px; padding: 8px 6px; text-align: center; box-shadow: inset 0 2px 6px rgba(19, 41, 75, 0.12); }
+  .status small { display: block; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); }
+  .status b { font-size: 18px; font-variant-numeric: tabular-nums; }
+
+  .pair { display: flex; align-items: center; gap: 14px; }
+  .pair .who { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .pair .who strong { font-size: 17px; line-height: 1.25; }
+  .pair .who span { color: var(--ink-2); font-size: 14px; }
+  .twin { display: flex; gap: 10px; flex: none; }
+  .twin figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 12px; color: var(--ink-2); }
+  .twin .disc { width: 52px; height: 52px; }
+  .disc.empty { background: repeating-linear-gradient(45deg, var(--sunken) 0 6px, var(--surface-1) 6px 12px); }
+
+  .pots { display: grid; grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 10px 6px; }
+  .pot { position: relative; border: 0; background: none; padding: 0; display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 11.5px; line-height: 1.2; color: var(--ink); text-align: center; }
+  .pot i {
+    display: block; width: 52px; height: 52px; border-radius: 50%; border: 2px solid transparent;
+    background: linear-gradient(var(--c), var(--c)) padding-box, var(--rim) border-box;
+    box-shadow: inset 0 -6px 9px rgba(0, 0, 0, 0.28), inset 0 3px 5px rgba(255, 255, 255, 0.32), 0 5px 10px var(--shadow-warm);
+    transition: transform 0.1s ease;
+  }
+  .pot:active i { transform: scale(0.93); }
+  .pot .count { position: absolute; top: -4px; right: calc(50% - 34px); min-width: 22px; height: 22px; padding: 0 5px; border-radius: 999px; background: var(--navy-2); color: #fff; font-size: 12px; font-weight: bold; line-height: 22px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3); }
+  .pot .strong { font-size: 10px; font-weight: bold; color: var(--warn-ink); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; min-height: 40px; align-items: center; }
+  .chip { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--hair); background: var(--sunken); border-radius: 999px; padding: 5px 6px 5px 12px; font-size: 13.5px; }
+  .chip button { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--hair); background: var(--surface-1); font-weight: bold; font-size: 16px; line-height: 1; padding: 0; }
+
+  .marv { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 12px; align-items: start; }
+  .marv img { width: 64px; height: 90px; object-fit: contain; background: #fff; border-radius: 12px; box-shadow: inset 0 0 0 1px var(--hair), 0 4px 10px var(--shadow-warm); }
+  .marv p { margin: 0; background: var(--sunken); border-radius: 14px; padding: 12px 14px; font-size: 15px; }
+
+  .field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: bold; }
+  .field input { font-weight: normal; font-size: 16px; padding: 11px 12px; border-radius: 12px; border: 1px solid var(--hair); background: var(--sunken); box-shadow: inset 0 2px 6px rgba(19, 41, 75, 0.12); }
+  table.board { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+  table.board th, table.board td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--hair); }
+  table.board td:last-child, table.board th:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+  table.board tr.me td { font-weight: bold; }
+  table.board .sample { color: var(--ink-2); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo"><img class="on-light" src="brand/logo.svg" alt="Magicman: repair, renew, restore"><img class="on-dark" src="brand/logo-white.svg" alt="Magicman: repair, renew, restore"></div>
+    <span class="eyebrow">Marv's Workshop</span>
+    <h1>Colour match</h1>
+    <p>Mix the patch until it disappears into the surface. Five jobs a round, three attempts a job.</p>
+  </header>
+
+  <div class="card">
+    <h2>Level</h2>
+    <div class="row" id="levels"></div>
+    <p class="note" id="level-note"></p>
+  </div>
+
+  <div class="card">
+    <div class="status">
+      <div><small>Job</small><b id="s-job">1 of 5</b></div>
+      <div><small>Attempt</small><b id="s-attempt">1 of 3</b></div>
+      <div><small>Score</small><b id="s-score">0</b></div>
+    </div>
+    <div class="stage">
+      <canvas id="stage" aria-label="3D scene. Drag to turn it, pinch to zoom."></canvas>
+      <span class="stage-label" id="stage-label"></span>
+      <div class="zoomer" id="zoomer"><button class="zb" type="button" id="zoom-out" aria-label="Zoom out">&minus;</button><button class="zb" type="button" id="zoom-in" aria-label="Zoom in">+</button></div>
+      <p class="fail" id="fail" hidden>This browser could not start 3D graphics, so the scene cannot be shown. You can still mix against the two colour discs below.</p>
+    </div>
+    <div class="pair">
+      <div class="who"><strong id="job-title"></strong><span id="job-sub"></span></div>
+      <div class="twin">
+        <figure><i class="disc" id="d-target"></i>Target</figure>
+        <figure><i class="disc empty" id="d-mix"></i>Your mix</figure>
+      </div>
+    </div>
+    <p class="banner plain" id="result" aria-live="polite" hidden></p>
+    <div class="row" id="after" hidden><button class="pill primary" type="button" id="btn-next">Next job</button></div>
+  </div>
+
+  <div class="card" id="bench">
+    <h2 id="pal-title">Paints</h2>
+    <div class="pots" id="pots"></div>
+    <div class="chips" id="chips"></div>
+    <div class="row">
+      <button class="pill primary" type="button" id="btn-check">Check the match</button>
+      <button class="pill" type="button" id="btn-hint">Ask MARV</button>
+      <button class="pill" type="button" id="btn-reset">Start the mix again</button>
+    </div>
+    <div class="marv">
+      <img id="marv-img" src="brand/marv/focussed.jpg" alt="MARV">
+      <p id="marv-say" aria-live="polite"></p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Leaderboard</h2>
+    <label class="field" for="player">Your name, for the board
+      <input id="player" type="text" maxlength="24" autocomplete="nickname" placeholder="Type your name">
+    </label>
+    <table class="board"><thead><tr><th>Place</th><th>Name</th><th>Score</th></tr></thead><tbody id="board"></tbody></table>
+    <p class="note">Scores are kept on this phone only for now. Rows marked "sample" are made up to show how the board looks. A shared board for all technicians needs somewhere to store scores, which is still to be decided.</p>
+  </div>
+</div>
+
+<script src="vendor/three.min.js"></script>
+<script src="vendor/RoundedBoxGeometry.js"></script>
+<script src="vendor/RoomEnvironment.js"></script>
+<script src="js/scenes.js"></script>
+<script src="js/colour.js"></script>
+<script src="js/mix.js"></script>
+<script>
+(function () {
+  "use strict";
+  var C = window.MarvColour, M = window.MarvMix;
+  var $ = function (id) { return document.getElementById(id); };
+  var JOBS = 5, ATTEMPTS = 3, BARE = "#d9d6cf";
+  var SAMPLE_SCORES = {
+    trainee: [["Sample player A", 520], ["Sample player B", 410], ["Sample player C", 300]],
+    technician: [["Sample player A", 1100], ["Sample player B", 800], ["Sample player C", 500]],
+    senior: [["Sample player A", 1900], ["Sample player B", 1350], ["Sample player C", 900]],
+    master: [["Sample player A", 3400], ["Sample player B", 2100], ["Sample player C", 1400]]
+  };
+  // Lightness each scene's surface should fall in, so a bath is not anthracite and a ship's bar is not pastel.
+  var LIGHTNESS = { bath: [62, 96], basin: [66, 96], shower: [60, 96], bar: [12, 52], frontdoor: [12, 58], stonecill: [50, 88], floor: [36, 82] };
+
+  var st = { level: "trainee", job: null, sceneId: null, spot: 0, mix: {}, attempt: 1, hints: 0, score: 0, done: 0, over: false, finished: false };
+  var viewer = null;
+
+  // ── Storage (this phone only) ──
+  function load(key, fallback) { try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; } }
+  function save(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* storage unavailable */ } }
+  var scores = load("marvs-workshop-scores", {});
+  $("player").value = load("marvs-workshop-player", "");
+  $("player").addEventListener("input", function () { save("marvs-workshop-player", $("player").value); renderBoard(); });
+
+  function say(pose, text) { $("marv-img").src = "brand/marv/" + pose + ".jpg"; $("marv-say").textContent = text; }
+  function meta(id) { return MarvScenes.list.filter(function (s) { return s.id === id; })[0]; }
+  function lv() { return M.level(st.level); }
+
+  // ── Round and job ──
+  function newRound() {
+    st.score = 0; st.done = 0; st.finished = false;
+    newJob();
+  }
+  function newJob() {
+    var list = MarvScenes.list, id = list[Math.floor(Math.random() * list.length)].id;
+    while (list.length > 1 && id === st.sceneId) id = list[Math.floor(Math.random() * list.length)].id;
+    var range = LIGHTNESS[id];
+    st.job = M.makeJob(st.level, range ? function (rgb) { var L = C.rgbToLab(rgb)[0]; return L >= range[0] && L <= range[1]; } : null);
+    st.sceneId = id; st.mix = {}; st.attempt = 1; st.hints = 0; st.over = false;
+    if (viewer) {
+      viewer.show(id, 0);
+      st.spot = Math.floor(Math.random() * viewer.spots().length);
+      viewer.setSpot(st.spot);
+      viewer.setColour(C.toHex(st.job.target));
+    }
+    $("stage-label").textContent = meta(id).name;
+    $("job-title").textContent = meta(id).name;
+    $("job-sub").textContent = viewer ? viewer.spots()[st.spot] : meta(id).blurb;
+    $("d-target").style.background = C.toHex(st.job.target);
+    $("result").hidden = true; $("after").hidden = true; $("bench").hidden = false;
+    say("focussed", st.level === "trainee"
+      ? "New job. Tap a paint to add a drop. Ask me as often as you like."
+      : lv().hints ? "New job. Start with the tint closest to the target, then adjust. You have " + lv().hints + " hints."
+                   : "New job. No hints at this level. Take your time before you check.");
+    renderMix(); renderStatus(); syncZoom();
+  }
+  function renderStatus() {
+    $("s-job").textContent = Math.min(st.done + 1, JOBS) + " of " + JOBS;
+    $("s-attempt").textContent = Math.min(st.attempt, ATTEMPTS) + " of " + ATTEMPTS;
+    $("s-score").textContent = String(st.score);
+    var left = lv().hints === Infinity ? null : Math.max(0, lv().hints - st.hints);
+    $("btn-hint").hidden = lv().hints === 0;
+    $("btn-hint").disabled = left === 0;
+    $("btn-hint").textContent = left === null ? "Ask MARV" : "Ask MARV (" + left + " left)";
+  }
+
+  // ── Paints and the mix ──
+  function renderPalette() {
+    var box = $("pots"); box.textContent = "";
+    $("pal-title").textContent = lv().palette === "primaries" ? "Primary colours" : "The tints on the van";
+    M.palette(st.level).forEach(function (t) {
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "pot"; b.dataset.id = t.id;
+      b.setAttribute("aria-label", "Add a drop of " + t.name);
+      var dot = document.createElement("i"); dot.style.setProperty("--c", C.toHex(t.rgb));
+      b.appendChild(dot);
+      b.appendChild(document.createTextNode(t.name));
+      if (t.strong) { var s = document.createElement("span"); s.className = "strong"; s.textContent = "Very strong"; b.appendChild(s); }
+      b.addEventListener("click", function () { if (st.over) return; st.mix[t.id] = (st.mix[t.id] || 0) + 1; renderMix(); });
+      box.appendChild(b);
+    });
+  }
+  function renderMix() {
+    var c = M.mixColour(st.mix), disc = $("d-mix");
+    disc.classList.toggle("empty", !c);
+    disc.style.background = c ? C.toHex(c) : "";
+    if (viewer && !st.over) viewer.setPatch(c ? C.toHex(c) : BARE);
+    document.querySelectorAll("#pots .pot").forEach(function (b) {
+      var n = st.mix[b.dataset.id] || 0, badge = b.querySelector(".count");
+      if (n && !badge) { badge = document.createElement("span"); badge.className = "count"; b.appendChild(badge); }
+      if (badge) { if (n) badge.textContent = String(n); else badge.remove(); }
+    });
+    var chips = $("chips"); chips.textContent = "";
+    var ids = Object.keys(st.mix).filter(function (id) { return st.mix[id] > 0; });
+    if (!ids.length) { var e = document.createElement("span"); e.className = "note"; e.textContent = "No drops yet."; chips.appendChild(e); }
+    ids.forEach(function (id) {
+      var chip = document.createElement("span"); chip.className = "chip";
+      chip.appendChild(document.createTextNode(st.mix[id] + " " + M.tint(id).name));
+      var minus = document.createElement("button"); minus.type = "button"; minus.textContent = "−";
+      minus.setAttribute("aria-label", "Take out a drop of " + M.tint(id).name);
+      minus.addEventListener("click", function () { if (st.over) return; st.mix[id] -= 1; if (st.mix[id] <= 0) delete st.mix[id]; renderMix(); });
+      chip.appendChild(minus); chips.appendChild(chip);
+    });
+  }
+
+  function check() {
+    if (st.over) return;
+    if (!M.drops(st.mix)) { say("wincing", "There is nothing in the pot yet. Add some drops first."); return; }
+    var j = M.judge(st.mix, st.job.target, st.level);
+    if (j.match) return endJob(true, j);
+    if (st.attempt >= ATTEMPTS) return endJob(false, j);
+    st.attempt += 1;
+    say("disappointed", "Not yet, " + j.percent + "% match and " + lv().name + " needs " + Math.round(100 - lv().maxDiff * 2.5) + "%. "
+      + (st.level === "trainee" ? M.hint(st.mix, st.job.target) : "Have another look and adjust."));
+    renderStatus();
+  }
+  function endJob(matched, j) {
+    st.over = true; st.done += 1;
+    var r = $("result"), gained = 0;
+    if (matched) {
+      gained = Math.max(0, lv().scores[st.attempt - 1] - st.hints * lv().hintCost);
+      st.score += gained;
+      r.className = "banner pass";
+      r.textContent = "Matched at " + j.percent + "%. Like it never happened. +" + gained + " points.";
+      if (viewer) viewer.setPatch(null);
+      say(st.attempt === 1 ? "triumphant" : "congratulatory", st.attempt === 1 ? "First time. That is how it is done." : "Got there. Nicely adjusted.");
+    } else {
+      r.className = "banner warn";
+      r.textContent = "Out of attempts at " + j.percent + "% match. One way to mix it: " + M.recipeText(st.job.recipe) + ".";
+      say("thumbsup", "That one got away. Look at the recipe, then try the next.");
+    }
+    r.hidden = false;
+    st.finished = st.done >= JOBS;
+    $("btn-next").textContent = st.finished ? "See the board and play again" : "Next job";
+    $("after").hidden = false; $("bench").hidden = true;
+    if (st.finished) {
+      var name = ($("player").value || "").trim() || "You";
+      (scores[st.level] = scores[st.level] || []).push({ name: name, score: st.score, when: Date.now() });
+      scores[st.level].sort(function (a, b) { return b.score - a.score; });
+      scores[st.level] = scores[st.level].slice(0, 20);
+      save("marvs-workshop-scores", scores);
+      r.textContent += " Round over: " + st.score + " points.";
+      renderBoard(Date.now());
+    }
+    renderStatus();
+  }
+  function renderBoard() {
+    var rows = (scores[st.level] || []).map(function (s) { return { name: s.name, score: s.score, when: s.when }; })
+      .concat(SAMPLE_SCORES[st.level].map(function (s) { return { name: s[0], score: s[1], sample: true }; }))
+      .sort(function (a, b) { return b.score - a.score; }).slice(0, 8);
+    var newest = (scores[st.level] || []).reduce(function (m, s) { return Math.max(m, s.when || 0); }, 0);
+    var body = $("board"); body.textContent = "";
+    rows.forEach(function (r, i) {
+      var tr = document.createElement("tr");
+      if (r.sample) tr.className = "sample"; else if (r.when === newest) tr.className = "me";
+      [String(i + 1), r.name + (r.sample ? " (sample)" : ""), String(r.score)].forEach(function (t) { var td = document.createElement("td"); td.textContent = t; tr.appendChild(td); });
+      body.appendChild(tr);
+    });
+  }
+
+  // ── Controls ──
+  M.LEVELS.forEach(function (l) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "pill"; b.textContent = l.name; b.dataset.level = l.id;
+    b.setAttribute("aria-pressed", String(l.id === st.level));
+    b.addEventListener("click", function () { setLevel(l.id); });
+    $("levels").appendChild(b);
+  });
+  function setLevel(id) {
+    st.level = id;
+    document.querySelectorAll("#levels .pill").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.level === id)); });
+    var l = lv();
+    $("level-note").textContent = (l.palette === "primaries" ? "Primary colours. " : "The eleven van tints. ")
+      + "A match needs " + Math.round(100 - l.maxDiff * 2.5) + "%. "
+      + (l.hints === Infinity ? "Unlimited hints." : l.hints ? l.hints + " hints a job, " + l.hintCost + " points each." : "No hints.")
+      + " Changing level starts a new round.";
+    renderPalette(); renderBoard(); newRound();
+  }
+  $("btn-check").addEventListener("click", check);
+  $("btn-reset").addEventListener("click", function () { if (st.over) return; st.mix = {}; renderMix(); say("focussed", "Clean pot. Start again."); });
+  $("btn-hint").addEventListener("click", function () {
+    if (st.over) return;
+    var l = lv();
+    if (l.hints !== Infinity && st.hints >= l.hints) return;
+    st.hints += 1;
+    say("confident", M.hint(st.mix, st.job.target) + (l.hintCost ? " That hint costs " + l.hintCost + " points." : ""));
+    renderStatus();
+  });
+  $("btn-next").addEventListener("click", function () {
+    if (st.finished) newRound(); else newJob();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+  function syncZoom() {
+    if (!viewer) return;
+    var z = viewer.getZoom();
+    $("zoom-out").disabled = z <= 1.001; $("zoom-in").disabled = z >= 3.39;
+  }
+
+  try { viewer = MarvScenes.createViewer($("stage"), { onZoom: syncZoom }); }
+  catch (err) { $("stage").hidden = true; $("stage-label").hidden = true; $("zoomer").hidden = true; $("fail").hidden = false; }
+  if (viewer) {
+    viewer.resize();
+    window.addEventListener("resize", function () { viewer.resize(); });
+    $("zoom-in").addEventListener("click", function () { viewer.zoom(viewer.getZoom() * 1.45); syncZoom(); });
+    $("zoom-out").addEventListener("click", function () { viewer.zoom(viewer.getZoom() / 1.45); syncZoom(); });
+  }
+  setLevel(st.level);
+})();
+</script>
+</body>
+</html>
