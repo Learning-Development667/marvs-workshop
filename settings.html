@@ -10,9 +10,9 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" href="brand/icon-192.png">
 <link rel="apple-touch-icon" href="brand/icon-180.png">
-<script src="js/app.js?v=0.10"></script>
+<script src="js/app.js?v=0.11"></script>
 <title>Settings</title>
-<link rel="stylesheet" href="css/workshop.css?v=0.10">
+<link rel="stylesheet" href="css/workshop.css?v=0.11">
 <style>
   .choice { width: 100%; display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 2px 14px; align-items: center; padding: 14px 4px; border: 0; border-bottom: 1px solid var(--hair); background: none; text-align: left; color: var(--ink); min-height: 56px; }
   .choice:last-child { border-bottom: 0; }
@@ -21,14 +21,26 @@
   .choice .tick { grid-row: 1 / span 2; width: 26px; height: 26px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--ink-2); display: flex; align-items: center; justify-content: center; color: transparent; }
   .choice .tick svg { width: 15px; height: 15px; }
   .choice[aria-checked="true"] .tick { background: var(--navy-2); box-shadow: inset 0 0 0 2px var(--green); color: #fff; }
-  .guide { display: flex; flex-direction: column; gap: 10px; padding: 16px 0; border-top: 1px solid var(--hair); }
-  .guide:first-child { border-top: 0; padding-top: 0; }
-  .guide h3 { margin: 0; font-size: 17px; }
-  .guide p { margin: 0; font-size: 14.5px; color: var(--ink-2); }
-  .guide video { width: 100%; max-width: 250px; align-self: center; aspect-ratio: 390 / 760; border-radius: 16px; background: var(--navy-2); box-shadow: inset 0 0 0 1px var(--hair), 0 8px 20px var(--shadow-warm); }
-  .guide details { font-size: 14.5px; }
-  .guide summary { cursor: pointer; font-weight: bold; min-height: 44px; display: flex; align-items: center; }
-  .guide ol { margin: 4px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+  .tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .tile { display: flex; flex-direction: column; text-align: left; padding: 0; overflow: hidden; border: 2px solid transparent; border-radius: 16px; color: var(--ink);
+    background: linear-gradient(180deg, var(--surface-1), var(--surface-2)) padding-box, var(--rim) border-box; box-shadow: 0 6px 14px var(--shadow-warm); }
+  .tile:active { transform: translateY(1px); }
+  .tile .thumb { position: relative; display: block; width: 100%; aspect-ratio: 4 / 3; overflow: hidden; background: var(--navy-2); }
+  .tile .thumb img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; display: block; }
+  .tile .thumb::after { content: ""; position: absolute; right: 8px; bottom: 8px; width: 30px; height: 30px; border-radius: 50%; background: rgba(8, 18, 32, 0.82) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 7l9 5-9 5z' fill='%23ffffff'/%3E%3C/svg%3E") center / 18px no-repeat; box-shadow: 0 0 0 2px #93c847; }
+  .tile { text-decoration: none; }
+  .tile .tour-thumb { background: #ffffff; }
+  .tile .tour-thumb img { object-fit: contain; }
+  .tile .tour-thumb::after { display: none; }
+  .tile b { display: block; padding: 10px 12px 2px; font-size: 14.5px; line-height: 1.3; }
+  .tile span { display: block; padding: 0 12px 12px; font-size: 12.5px; color: var(--ink-2); line-height: 1.35; }
+  .tile small { display: block; padding: 10px 12px 0; font-size: 10.5px; font-weight: bold; letter-spacing: 0.1em; text-transform: uppercase; color: var(--green-ink); }
+  .viewer { display: flex; flex-direction: column; gap: 12px; }
+  .viewer h3 { margin: 0; font-size: 19px; }
+  .viewer p { margin: 0; color: var(--ink-2); }
+  .viewer video { width: 100%; max-width: 300px; align-self: center; aspect-ratio: 540 / 1052; border-radius: 16px; background: var(--navy-2); box-shadow: inset 0 0 0 1px var(--hair), 0 8px 20px var(--shadow-warm); }
+  .viewer ol { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; font-size: 15px; }
+  .viewer .next { display: flex; gap: 10px; flex-wrap: wrap; }
   .about { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 16px; margin: 0; font-size: 15px; }
   .about dt { color: var(--ink-2); }
   .about dd { margin: 0; font-weight: bold; font-variant-numeric: tabular-nums; }
@@ -64,8 +76,19 @@
 
   <section class="card" aria-labelledby="h-guides">
     <h2 id="h-guides">Video guides</h2>
-    <p class="note">Short, silent screen recordings with captions. Each has the steps written out underneath.</p>
-    <div id="guides"></div>
+    <div id="guide-menu">
+      <p class="note" style="margin-bottom:12px">What do you need help with? Each guide is a short, silent recording with captions, and the steps written out.</p>
+      <div class="tiles" id="guides"></div>
+    </div>
+    <div class="viewer" id="guide-view" hidden>
+      <button class="btn-quiet" type="button" id="guide-back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>All guides</button>
+      <h3 id="gv-title" tabindex="-1"></h3>
+      <p id="gv-what"></p>
+      <video id="gv-video" controls playsinline muted preload="metadata"></video>
+      <h4 style="margin:4px 0 0">The steps</h4>
+      <ol id="gv-steps"></ol>
+      <div class="next" id="gv-next"></div>
+    </div>
   </section>
 
   <section class="card" aria-labelledby="h-about">
@@ -95,20 +118,44 @@
     { id: "ref-card", title: "Printing the reference card", what: "Print and use the reference card that corrects the camera.",
       steps: ["In Settings or Photo Match, open \"Print the reference card\".", "Print at 100% or actual size, in colour, on matt paper.", "Cut out one card.", "On the job, lay it flat beside the damage, in the same light, before taking the photo.", "Keep it clean, flat and out of sunlight so its greys stay true."] }
   ];
+  // A menu of guides; tapping one opens it on its own, with the video and the steps.
+  var SECTION = { "photo-mix": "Photo Match", "photo-find": "Photo Match", "colour-lab": "Colour Lab", "mix-bench": "Mix Bench", "ref-card": "Reference card" };
+  var SHORT = { "photo-mix": "Mix to a photo", "photo-find": "Find the colour", "colour-lab": "Practise matching", "mix-bench": "Scale and fix a mix", "ref-card": "Print and use the card" };
   var box = $("guides");
+  // The tour of the home screen comes first.
+  var tour = document.createElement("a"); tour.className = "tile"; tour.href = "index.html#tour";
+  tour.innerHTML = '<i class="thumb tour-thumb"><img alt="" src="brand/marv/excited.jpg"></i><small>Getting started</small><b>Take the tour again</b><span>A quick look round the home screen.</span>';
+  box.appendChild(tour);
   GUIDES.forEach(function (g) {
-    var el = document.createElement("article"); el.className = "guide";
-    var h = document.createElement("h3"); h.textContent = g.title; el.appendChild(h);
-    var p = document.createElement("p"); p.textContent = g.what; el.appendChild(p);
-    var v = document.createElement("video");
-    v.controls = true; v.preload = "none"; v.setAttribute("playsinline", ""); v.muted = true;
-    v.poster = "guides/" + g.id + ".jpg"; v.src = "guides/" + g.id + ".mp4";
-    v.setAttribute("aria-label", "Video guide: " + g.title + ". The steps are written out below.");
-    el.appendChild(v);
-    var d = document.createElement("details"), s = document.createElement("summary"); s.textContent = "The steps in writing"; d.appendChild(s);
-    var ol = document.createElement("ol"); g.steps.forEach(function (t) { var li = document.createElement("li"); li.textContent = t; ol.appendChild(li); });
-    d.appendChild(ol); el.appendChild(d); box.appendChild(el);
+    var t = document.createElement("button"); t.type = "button"; t.className = "tile";
+    t.setAttribute("aria-label", g.title + ". " + g.what);
+    t.innerHTML = '<i class="thumb"><img alt="" src="guides/' + g.id + '.jpg"></i>';
+    var sm = document.createElement("small"); sm.textContent = SECTION[g.id];
+    var b = document.createElement("b"); b.textContent = SHORT[g.id];
+    var sp = document.createElement("span"); sp.textContent = g.what;
+    t.appendChild(sm); t.appendChild(b); t.appendChild(sp);
+    t.addEventListener("click", function () { location.hash = "guide-" + g.id; });
+    box.appendChild(t);
   });
+  function openGuide(id) {
+    var g = GUIDES.filter(function (x) { return x.id === id; })[0], v = $("gv-video");
+    if (!g) { $("guide-view").hidden = true; $("guide-menu").hidden = false; v.pause(); v.removeAttribute("src"); return; }
+    $("guide-menu").hidden = true; $("guide-view").hidden = false;
+    $("gv-title").textContent = g.title; $("gv-what").textContent = g.what;
+    v.poster = "guides/" + g.id + ".jpg"; v.src = "guides/" + g.id + ".mp4";
+    v.setAttribute("aria-label", "Video guide: " + g.title + ". The steps are written out below the video.");
+    var ol = $("gv-steps"); ol.textContent = "";
+    g.steps.forEach(function (t) { var li = document.createElement("li"); li.textContent = t; ol.appendChild(li); });
+    var nx = $("gv-next"); nx.textContent = "";
+    GUIDES.filter(function (x) { return x.id !== id; }).slice(0, 2).forEach(function (o) {
+      var b = document.createElement("button"); b.type = "button"; b.className = "btn-quiet"; b.textContent = "Next: " + SHORT[o.id];
+      b.addEventListener("click", function () { location.hash = "guide-" + o.id; }); nx.appendChild(b);
+    });
+    $("h-guides").scrollIntoView({ block: "start" }); $("gv-title").focus({ preventScroll: true });
+  }
+  $("guide-back").addEventListener("click", function () { if (/^#guide-/.test(location.hash)) history.back(); else openGuide(null); });
+  function route() { var m = location.hash.match(/^#guide-(.+)$/); openGuide(m ? m[1] : null); }
+  window.addEventListener("hashchange", route); route();
 
   var tick = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
   function showTheme() {

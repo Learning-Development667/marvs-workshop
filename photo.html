@@ -10,9 +10,9 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" href="brand/icon-192.png">
 <link rel="apple-touch-icon" href="brand/icon-180.png">
-<script src="js/app.js?v=0.10"></script>
+<script src="js/app.js?v=0.11"></script>
 <title>Marv's Photo Match</title>
-<link rel="stylesheet" href="css/workshop.css?v=0.10">
+<link rel="stylesheet" href="css/workshop.css?v=0.11">
 <style>
   .photo-stage { position: relative; border-radius: 16px; overflow: hidden; background: #cfc9be; box-shadow: inset 0 0 0 1px rgba(19, 41, 75, 0.18); line-height: 0; }
   .photo-stage canvas { display: block; width: 100%; height: auto; }
@@ -108,6 +108,7 @@
       <div class="tri" id="tri-true"><i class="disc" id="d-true"></i><strong>Actual colour</strong><span id="t-true"></span></div>
     </div>
     <p class="banner" id="verdict"></p>
+    <p class="banner" id="card-check" hidden></p>
     <button class="btn-quiet" type="button" id="btn-hascard" hidden>The card is in this photo</button>
     <div id="find" hidden>
       <div class="found">
@@ -128,9 +129,9 @@
 
 <canvas class="offstage" id="render" aria-hidden="true"></canvas>
 
-<script src="js/colour.js?v=0.10"></script>
-<script src="js/refcard.js?v=0.10"></script>
-<script src="js/mix.js?v=0.10"></script>
+<script src="js/colour.js?v=0.11"></script>
+<script src="js/refcard.js?v=0.11"></script>
+<script src="js/mix.js?v=0.11"></script>
 <script>
 (function () {
   "use strict";
@@ -167,7 +168,9 @@
     var w = photo.width, h = photo.height, len = w * 0.5;
     if (sample && sample.damage) {                     // a close-up: the card lies just beside the damage
       var d = sample.damage; len = w * 0.56;
-      var y = d.y + h * 0.26 < h * 0.9 ? d.y + h * 0.26 : d.y - h * 0.26;
+      var pitch = len / (K.CARD.patches.length + 1), below = d.y + d.r * 0.6 + pitch * 1.4;
+      // two rows deep: lay it below the damage if it fits, otherwise above
+      var y = below + pitch * 3.1 < h * 0.98 ? below : d.y - d.r * 0.6 - pitch * 3.4;
       var x0 = Math.max(w * 0.06, Math.min(w * 0.94 - len, d.x - len / 2));
       return { a: { x: x0, y: y }, b: { x: x0 + len, y: y } };
     }
@@ -176,7 +179,7 @@
   function setMode(m) {
     mode = m;
     card = m === "virtual" ? defaultCard() : { a: null, b: null };
-    spot = null; spotAuto = false; answer = null; $("result").hidden = true;
+    spot = null; spotAuto = false; answer = null; lastSide = 0; $("result").hidden = true;
     if (m === "none") { spot = autoSpot(); spotAuto = !!spot; }
     $("btn-printed").hidden = !!sample;
     $("btn-printed").textContent = m === "printed" ? "There is no card in this photo" : "The printed card is in this photo";
@@ -350,19 +353,18 @@
     var r = overlay.getBoundingClientRect();
     return { x: (e.clientX - r.left) * overlay.width / r.width, y: (e.clientY - r.top) * overlay.height / r.height };
   }
+  // Keep the whole card, both rows, inside the picture.
   function clampCard() {
-    var w = photo.width, h = photo.height, m = w * 0.04;
-    var dx = Math.max(m - Math.min(card.a.x, card.b.x), Math.min(0, w - m - Math.max(card.a.x, card.b.x)));
-    var dy = Math.max(m - Math.min(card.a.y, card.b.y), Math.min(0, h - m - Math.max(card.a.y, card.b.y)));
+    var w = photo.width, h = photo.height, m = w * 0.04, g = K.geometry(card.a, card.b), off = g.pitch * 2.2;
+    var xs = [card.a.x, card.b.x, card.a.x + g.nx * off, card.b.x + g.nx * off], ys = [card.a.y, card.b.y, card.a.y + g.ny * off, card.b.y + g.ny * off];
+    var dx = Math.max(m - Math.min.apply(null, xs), Math.min(0, w - m - Math.max.apply(null, xs)));
+    var dy = Math.max(m - Math.min.apply(null, ys), Math.min(0, h - m - Math.max.apply(null, ys)));
     card.a.x += dx; card.b.x += dx; card.a.y += dy; card.b.y += dy;
   }
-  function onCard(p) {
-    if (!(card.a && card.b)) return false;
-    var ax = card.a.x, ay = card.a.y, bx = card.b.x, by = card.b.y, len2 = (bx - ax) * (bx - ax) + (by - ay) * (by - ay);
-    var t = Math.max(-0.08, Math.min(1.08, ((p.x - ax) * (bx - ax) + (p.y - ay) * (by - ay)) / len2));
-    var d = Math.hypot(p.x - (ax + t * (bx - ax)), p.y - (ay + t * (by - ay)));
-    return d < Math.sqrt(len2) / (K.CARD.patches.length + 1) * 1.1;
-  }
+  // Which side of the grey row the colour row is on: known for the virtual card, found by reading for a printed one.
+  var lastSide = 0;
+  function cardSide() { return mode === "virtual" ? 1 : lastSide; }
+  function onCard(p) { return K.covers(card.a, card.b, p, cardSide()); }
   function surfaceSize() { return Math.max(10, Math.round(Math.min(photo.width, photo.height) * 0.03)); }
   function nearestMark(p) {
     var r = overlay.getBoundingClientRect(), reach = 30 * overlay.width / r.width, best = null, bd = reach;
@@ -415,7 +417,7 @@
     var nx = -(by - ay) / len, ny = (bx - ax) / len, pitch = len / (K.CARD.patches.length + 1);
     var size = Math.round(surfaceSize() * 1.5), points = [];
     // beside the card, both sides
-    [-1, 1].forEach(function (side) { [1.7, 2.5].forEach(function (far) { [0.15, 0.3, 0.45, 0.6, 0.75, 0.9].forEach(function (t) {
+    [-1, 1].forEach(function (side) { [1.7, 2.5, 3.6].forEach(function (far) { [0.15, 0.3, 0.45, 0.6, 0.75, 0.9].forEach(function (t) {
       points.push({ x: ax + (bx - ax) * t + nx * pitch * far * side, y: ay + (by - ay) * t + ny * pitch * far * side, near: far < 2 });
     }); }); });
     // around the damage, where the app knows where that is
@@ -431,8 +433,7 @@
       if (x < size || y < size || x > photo.width - size || y > photo.height - size) return;
       if (sample && sample.damage && Math.hypot(x - sample.damage.x, y - sample.damage.y) < sample.damage.r + size * 0.6) return;   // not the damage itself
       // not the card itself
-      var t = Math.max(0, Math.min(1, ((x - ax) * (bx - ax) + (y - ay) * (by - ay)) / (len * len)));
-      if (Math.hypot(x - (ax + t * (bx - ax)), y - (ay + t * (by - ay))) < pitch * 1.25) return;
+      if (K.covers(card.a, card.b, { x: x, y: y }, cardSide())) return;
       var px = pctx.getImageData(Math.round(x - size / 2), Math.round(y - size / 2), size, size).data, n = 0, sum = 0, sq = 0, c = [0, 0, 0];
       for (var i = 0; i < px.length; i += 16) { var l = 0.3 * px[i] + 0.59 * px[i + 1] + 0.11 * px[i + 2]; sum += l; sq += l * l; c[0] += px[i]; c[1] += px[i + 1]; c[2] += px[i + 2]; n++; }
       var mean = sum / n;
@@ -510,6 +511,7 @@
         var size = K.sampleSize(card.a, card.b);
         octx.lineWidth = u; octx.strokeStyle = "rgba(174,210,132,0.95)";
         K.patchCentres(card.a, card.b).forEach(function (c) { octx.strokeRect(c.x - size / 2, c.y - size / 2, size, size); });
+        if (lastSide) K.colourCentres(card.a, card.b, lastSide).forEach(function (c) { octx.strokeRect(c.x - size / 2, c.y - size / 2, size, size); });
       }
       if (card.a) ring(card.a, "A");
       if (card.b) ring(card.b, "B");
@@ -523,7 +525,7 @@
 
   // ── The answer ──
   function compute() {
-    answer = null; $("nocard").hidden = true; $("btn-hascard").hidden = true;
+    answer = null; $("nocard").hidden = true; $("btn-hascard").hidden = true; $("card-check").hidden = true;
     if (!spot || (sample && !sample.taken)) { $("result").hidden = true; return; }
     if (mode === "printed" && !(card.a && card.b)) { $("result").hidden = true; return; }
     var raw = K.readSquare(pctx, spot.x, spot.y, surfaceSize());
@@ -547,8 +549,21 @@
       return;
     }
     $("nocard").hidden = true; $("btn-hascard").hidden = true;
-    $("explain").textContent = "Cameras shift colours with the light. The card's greys are known, so the app measures that shift and takes it back out.";
+    $("explain").textContent = "Cameras shift colours with the light. The card's greys and colours are known, so the app measures that shift and takes it back out.";
     var read = K.readCard(pctx, card.a, card.b), cor = read.fit.apply(raw);
+    if (mode === "printed" && read.side !== lastSide) { lastSide = read.side; redraw(); }
+    // How well did the correction work on this photo? The card's own colours, each left out of the fit in turn.
+    var cc = $("card-check"), chk = read.fit.check, rough = chk != null && chk > 4;
+    if (chk != null) {
+      cc.className = "banner " + (rough ? "warn" : "plain");
+      cc.textContent = "Card check: the card's own colours came out within " + chk.toFixed(1) + " on average. "
+        + (chk <= 2 ? "A good correction." : chk <= 4 ? "A fair correction." : "A rough correction: retake with the card flat, clean and evenly lit.");
+    } else {
+      cc.className = "banner warn";
+      cc.textContent = "The card's colour row could not be read, so only the greys were used. Retake with the whole card in the photo.";
+    }
+    if (mode === "printed") cc.textContent += " Unless the card was printed by a professional colour-managed printer and its colours measured, the printer's own error is added to this reading.";
+    cc.hidden = false;
     $("d-cor").style.background = C.toHex(cor);
     if (sample) {
       var truth = K.readSquare(sample.base, spot.x, spot.y, surfaceSize());
@@ -569,7 +584,7 @@
       ? "The camera could not tell enough of the card's patches apart, so only a white balance was applied."
       : "Corrected using " + read.fit.used + " of the card's " + read.fit.total + " patches.")
       + (sample ? " Sample photos are simulated. Real photos in the feasibility tests came out between 4 and 10, so a phone will not reach repair accuracy yet."
-                : " The card's greys are taken at their design values until a printed card is measured.");
+                : " The card's patches are taken at their design values until a professionally printed card is measured.");
     answer = { target: cor, fit: read.fit };
     $("result").hidden = false;
     showFind();

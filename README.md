@@ -23,11 +23,12 @@ In progress. A landing screen leads to three working sections: photo matching, t
 | `photo.html` | Marv's Photo Match, with two tabs. Mix to a photo: read a surface's colour, corrected by the reference card if one is in the photo, then mix to it. Find the colour: tap an area and the app names the colour and suggests a mix of van tints |
 | `settings.html` | Settings: appearance (light, dark, or follow the phone), text size up to double, video guides with the steps written out, and the version |
 | `guides/` | The five video guides (MP4, silent, captions on screen) and their poster images, recorded from the app itself |
+| `js/tour.js` | The first-run tour of the home screen: shown once after the loading screen, Skip tour on every step, remembered once done; Settings can start it again |
 | `tools/bump-version.py` | Sets the version everywhere at once. Run it before each release so phones offer the update |
 | `card.html` | The printable reference card (test print, not measured) |
 | `js/app.js` | Shared by every page: the version number shown on the home screen, and keeping the page from zooming |
 | `js/colour.js` | Colour maths: CIELAB, the ΔE2000 difference, and the camera correction fitted from the reference card |
-| `js/refcard.js` | The reference card: its patches and how it is read from a photo. Provisional until a printed card is measured |
+| `js/refcard.js` | The reference card, two rows as in the feasibility report: greys (brightness and white balance) and colours (colour shifts, plus a per-photo card check). Works whichever end is tapped first. Provisional: unless printed by a colour-managed professional printer and measured, printer error carries into every reading |
 | `tests/colour-test.js` | Checks the maths against published reference pairs and the feasibility report's 68 photo readings. Run with `node tests/colour-test.js` |
 | `examples.html` | Try the scenes: turn, pinch to zoom, move the damage, random jobs, pass mark by level |
 | `js/scenes.js` | The scene kit: fourteen 3D scenes, damage spots, the viewer |

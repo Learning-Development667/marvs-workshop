@@ -116,7 +116,60 @@
   function toHex(rgb) { return "#" + rgb.map(function (v) { return ("0" + Math.round(Math.max(0, Math.min(255, v))).toString(16)).slice(-2); }).join(""); }
   function fromHex(h) { return [parseInt(h.substr(1, 2), 16), parseInt(h.substr(3, 2), 16), parseInt(h.substr(5, 2), 16)]; }
 
-  var api = { rgbToLab: rgbToLab, deltaE: deltaE, deltaRgb: deltaRgb, fitCorrection: fitCorrection, trimmedMean: trimmedMean, toHex: toHex, fromHex: fromHex, srgbToLinear: srgbToLinear, linearToSrgb: linearToSrgb };
+  /* Second step, from the card's colour patches: a 3 by 3 colour matrix in linear
+     light that corrects the shifts greys cannot show, such as a phone boosting
+     saturation or nudging hues. It is pulled gently towards "no change" so a few
+     patches cannot twist it. pairs: [{ x: [r,g,b], y: [r,g,b] }] in linear light. */
+  function inv3(m) {
+    var a = m[0][0], b = m[0][1], c = m[0][2], d = m[1][0], e = m[1][1], f = m[1][2], g = m[2][0], h = m[2][1], i = m[2][2];
+    var A = e * i - f * h, B = -(d * i - f * g), Cc = d * h - e * g, det = a * A + b * B + c * Cc;
+    if (Math.abs(det) < 1e-12) return null;
+    return [[A / det, -(b * i - c * h) / det, (b * f - c * e) / det],
+            [B / det, (a * i - c * g) / det, -(a * f - c * d) / det],
+            [Cc / det, -(a * h - b * g) / det, (a * e - b * d) / det]];
+  }
+  function fitMatrix(pairs, lambda) {
+    lambda = lambda == null ? 0.05 : lambda;
+    var XX = [[lambda, 0, 0], [0, lambda, 0], [0, 0, lambda]], YX = [[lambda, 0, 0], [0, lambda, 0], [0, 0, lambda]];
+    pairs.forEach(function (p) {
+      for (var r = 0; r < 3; r++) for (var c = 0; c < 3; c++) { XX[r][c] += p.x[r] * p.x[c]; YX[r][c] += p.y[r] * p.x[c]; }
+    });
+    var inv = inv3(XX);
+    if (!inv) return [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+    var M = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+    for (var r = 0; r < 3; r++) for (var c = 0; c < 3; c++) for (var k = 0; k < 3; k++) M[r][c] += YX[r][k] * inv[k][c];
+    return M;
+  }
+  function applyMatrix(M, lin) {
+    return [0, 1, 2].map(function (r) { return M[r][0] * lin[0] + M[r][1] * lin[1] + M[r][2] * lin[2]; });
+  }
+  /* The whole correction: greys first (fitCorrection), then the colour matrix.
+     greys: [{ seen, truth }] lightest first. colours: [{ seen, truth }].
+     check = how far the card's own colour patches land from their true values when
+     each one is left out of the fit in turn: an honest guide to this photo's accuracy. */
+  function fitFull(greys, colours, lambda) {
+    var base = fitCorrection(greys);
+    if (!colours || colours.length < 3) return Object.assign({}, base, { matrix: null, check: null });
+    function pairsOf(list) {
+      return list.map(function (p) { return { x: base.apply(p.seen).map(srgbToLinear), y: p.truth.map(srgbToLinear) }; });
+    }
+    var all = pairsOf(greys.concat(colours));
+    var M = fitMatrix(all, lambda);
+    var errs = colours.map(function (c, j) {
+      var others = pairsOf(greys.concat(colours.filter(function (o, k) { return k !== j; })));
+      var Mj = fitMatrix(others, lambda);
+      var out = applyMatrix(Mj, base.apply(c.seen).map(srgbToLinear)).map(linearToSrgb);
+      return deltaRgb(out, c.truth);
+    });
+    var check = errs.reduce(function (s, e) { return s + e; }, 0) / errs.length;
+    return {
+      used: base.used, total: base.total, kind: base.kind + ", then colour", fits: base.fits, matrix: M, check: check, checkWorst: Math.max.apply(null, errs),
+      greyOnly: base.apply,
+      apply: function (rgb) { return applyMatrix(M, base.apply(rgb).map(srgbToLinear)).map(linearToSrgb); }
+    };
+  }
+
+  var api = { rgbToLab: rgbToLab, deltaE: deltaE, deltaRgb: deltaRgb, fitCorrection: fitCorrection, fitMatrix: fitMatrix, fitFull: fitFull, trimmedMean: trimmedMean, toHex: toHex, fromHex: fromHex, srgbToLinear: srgbToLinear, linearToSrgb: linearToSrgb };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   global.MarvColour = api;
 })(typeof window !== "undefined" ? window : globalThis);

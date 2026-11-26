@@ -76,5 +76,32 @@ report('direct sun vs shaded sun', [2, 3]);
 report('soft indoor vs shaded sun', [1, 3]);
 if (!(all[1] < all[0] * 0.75)) { fail++; console.log('FAIL: correction did not tighten the spread across all four'); }
 if (!(three[1] < three[0] * 0.5)) { fail++; console.log('FAIL: correction did not halve the spread across the three comparable photos'); }
+// The colour row: does a colour matrix fitted from colour patches fix what greys cannot?
+{
+  const greysT = [244, 226, 207, 188, 169, 150, 131, 113].map(v => [v, v, v]);
+  const coloursT = [[176, 64, 66], [214, 130, 52], [222, 196, 60], [86, 150, 82], [40, 136, 150], [64, 84, 160], [134, 86, 156], [196, 160, 128]];
+  // a phone: white balance, tone curve, lifted shadows, boosted saturation and a slight hue twist
+  const cams = [
+    { gain: [1.14, 0.98, 0.76], gamma: 0.92, lift: 0.10, sat: 1.15, twist: 0.04 },
+    { gain: [0.84, 0.98, 1.20], gamma: 0.95, lift: 0.14, sat: 1.25, twist: -0.05 },
+    { gain: [1.04, 1.05, 1.12], gamma: 0.84, lift: 0.12, sat: 1.18, twist: 0.03 },
+    { gain: [0.82, 0.76, 0.68], gamma: 1.06, lift: 0.06, sat: 1.08, twist: 0 }];
+  const shoot = (rgb, c) => {
+    let v = rgb.map((x, ch) => c.lift * 255 + (1 - c.lift) * C.linearToSrgb(c.gain[ch] * Math.pow(Math.max(1e-4, C.srgbToLinear(x)), c.gamma)));
+    const y = 0.3 * v[0] + 0.59 * v[1] + 0.11 * v[2];
+    v = v.map(x => y + c.sat * (x - y));
+    return [v[0] * (1 - c.twist) + v[1] * c.twist, v[1] * (1 - c.twist) + v[2] * c.twist, v[2] * (1 - c.twist) + v[0] * c.twist].map(x => Math.max(0, Math.min(255, x)));
+  };
+  let seed3 = 5; const r3 = () => (seed3 = (seed3 * 16807) % 2147483647) / 2147483647;
+  const surfaces = Array.from({ length: 40 }, () => [40 + r3() * 190, 40 + r3() * 190, 40 + r3() * 190]);
+  let gSum = 0, fSum = 0, n = 0, checks = [];
+  cams.forEach(c => {
+    const fit = C.fitFull(greysT.map(t => ({ seen: shoot(t, c), truth: t })), coloursT.map(t => ({ seen: shoot(t, c), truth: t })));
+    checks.push(fit.check.toFixed(1));
+    surfaces.forEach(t => { const seen = shoot(t, c); gSum += C.deltaRgb(fit.greyOnly(seen), t); fSum += C.deltaRgb(fit.apply(seen), t); n++; });
+  });
+  console.log('Colour row on 40 surfaces x 4 simulated phones: greys only ΔE ' + (gSum / n).toFixed(2) + ', greys then colour ΔE ' + (fSum / n).toFixed(2) + ', card check per photo ' + checks.join(', '));
+  if (!(fSum < gSum * 0.75)) { fail++; console.log('FAIL: the colour row did not improve the correction'); }
+}
 console.log(fail ? 'FAILED: ' + fail : 'All checks passed');
 process.exit(fail ? 1 : 0);
