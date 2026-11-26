@@ -15,12 +15,12 @@ In progress. A landing screen leads to three working sections: photo matching, t
 
 | Path | What it is |
 |---|---|
-| `index.html` | The landing screen, with three doors: Match from a photo, Colour match, Tint measurements |
-| `bench.html` | Tint measurements: the Mix Bench tools (scale a recipe, fix a mix, tinter reference) in the Workshop look. `css/bench.css` styles it |
-| `play.html` | Colour match: mix a patch to match a 3D scene. Four levels, five jobs a round, three attempts a job, hints from MARV, scores and a leaderboard kept on the phone |
+| `index.html` | The landing screen, with three doors: Marv's Photo Match, Marv's Colour Lab and Marv's Mix Bench. Each section is named "Marv's ..." so more can be added to the Workshop later |
+| `bench.html` | Marv's Mix Bench: the tint measuring tools (scale a recipe, fix a mix, tinter reference) in the Workshop look. `css/bench.css` styles it |
+| `play.html` | Marv's Colour Lab: mix a patch to match a 3D scene. Four levels, five jobs a round, three attempts a job, hints from MARV, scores and a leaderboard kept on the phone |
 | `js/mix.js` | Paint mixing (three-channel Kubelka-Munk), the levels, job generation, hints. Estimated tint colours, not measured |
 | `tests/mix-test.js` | Checks mixes behave like paint and every generated job can be solved. Run with `node tests/mix-test.js` |
-| `photo.html` | Match from a photo: slide a reference card into the picture, tap the surface, read its corrected colour |
+| `photo.html` | Marv's Photo Match: slide a reference card into the picture, tap the surface, read its corrected colour |
 | `js/colour.js` | Colour maths: CIELAB, the ΔE2000 difference, and the camera correction fitted from the reference card |
 | `js/refcard.js` | The reference card: its patches and how it is read from a photo. Provisional until a printed card is measured |
 | `tests/colour-test.js` | Checks the maths against published reference pairs and the feasibility report's 68 photo readings. Run with `node tests/colour-test.js` |
