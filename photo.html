@@ -89,6 +89,7 @@
       <canvas id="overlay" aria-label="The picture. Drag the reference card into place, and tap the surface to match."></canvas>
       <span class="tag" id="tag" hidden></span>
     </div>
+    <p class="banner warn" id="nocard" role="status" hidden><strong>No correction made:</strong> no reference card in this photo.</p>
     <p class="banner plain" id="guide" aria-live="polite"></p>
     <button class="btn-main" type="button" id="btn-shoot" hidden>Take the photo</button>
     <button class="btn-quiet" type="button" id="btn-retake" hidden>Move the card and retake</button>
@@ -107,6 +108,7 @@
       <div class="tri" id="tri-true"><i class="disc" id="d-true"></i><strong>Actual colour</strong><span id="t-true"></span></div>
     </div>
     <p class="banner" id="verdict"></p>
+    <button class="btn-quiet" type="button" id="btn-hascard" hidden>The card is in this photo</button>
     <div id="find" hidden>
       <div class="found">
         <i class="disc" id="f-disc"></i>
@@ -223,6 +225,7 @@
   $("in-file").addEventListener("change", function (e) { loadFile(e.target.files[0]); e.target.value = ""; });
   $("btn-printed").addEventListener("click", function () { setMode(mode === "printed" ? "none" : "printed"); });
   $("btn-clear").addEventListener("click", function () { setMode("printed"); });
+  $("btn-hascard").addEventListener("click", function () { setMode("printed"); $("work").scrollIntoView({ behavior: "smooth", block: "start" }); });
 
   // ── The sample: a 3D scene you put the card into, then "photograph" ──
   // Each camera shift changes balance and brightness like a phone would, lifts the shadows, and boosts colour.
@@ -520,7 +523,7 @@
 
   // ── The answer ──
   function compute() {
-    answer = null;
+    answer = null; $("nocard").hidden = true; $("btn-hascard").hidden = true;
     if (!spot || (sample && !sample.taken)) { $("result").hidden = true; return; }
     if (mode === "printed" && !(card.a && card.b)) { $("result").hidden = true; return; }
     var raw = K.readSquare(pctx, spot.x, spot.y, surfaceSize());
@@ -534,14 +537,16 @@
     if (!canCorrect) {
       $("explain").textContent = "This is the colour as your camera recorded it.";
       $("t-raw").textContent = "as the camera recorded it";
-      v.className = "banner plain";
-      v.textContent = "There is no reference card in this photo, so the light may have shifted the colour a little.";
+      v.className = "banner warn";
+      v.innerHTML = "<strong>No correction made.</strong> There is no reference card in this photo, so this is the colour as your camera recorded it. The light may have shifted it.";
+      $("nocard").hidden = false; $("btn-hascard").hidden = false;
       note.innerHTML = 'For a corrected reading, <a href="card.html">print the reference card</a>, lay it beside the damage and take the photo again.';
       answer = { target: raw, fit: null };
       $("result").hidden = false;
       showFind();
       return;
     }
+    $("nocard").hidden = true; $("btn-hascard").hidden = true;
     $("explain").textContent = "Cameras shift colours with the light. The card's greys are known, so the app measures that shift and takes it back out.";
     var read = K.readCard(pctx, card.a, card.b), cor = read.fit.apply(raw);
     $("d-cor").style.background = C.toHex(cor);
