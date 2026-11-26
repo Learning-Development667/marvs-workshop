@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#13294b">
+<link rel="icon" type="image/png" href="brand/icon-192.png">
+<link rel="apple-touch-icon" href="brand/icon-180.png">
+<script src="js/app.js"></script>
+<title>Reference card</title>
+<link rel="stylesheet" href="css/workshop.css">
+<style>
+  .refcard {
+    display: flex; width: 100%; padding: 4mm; gap: 0; background: #ffffff;
+    box-shadow: 0 0 0 1px #c9c9c9; -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .refcard i { flex: 1; aspect-ratio: 4 / 5; display: flex; align-items: center; justify-content: center; }
+  .refcard i.mark::after { content: ""; width: 30%; aspect-ratio: 1; border-radius: 50%; background: #ffffff; }
+  .sheet { display: flex; flex-direction: column; gap: 10mm; }
+  .sheet figure { margin: 0; width: 100%; max-width: 168mm; min-width: 0; }
+  .sheet figcaption { font-size: 9pt; color: #555; margin-top: 2mm; }
+  ol.steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 15px; }
+  @page { size: A4 portrait; margin: 15mm; }
+  @media print {
+    body { background: #ffffff; }
+    .screen-only { display: none !important; }
+    .wrap { padding: 0; max-width: none; }
+    .card { box-shadow: none; padding: 0; background: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="screen-only">
+    <a class="back" href="photo.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Marv's Photo Match</a>
+    <div class="logo"><img class="on-light" src="brand/logo.svg" alt="Magicman: repair, renew, restore"><img class="on-dark" src="brand/logo-white.svg" alt="Magicman: repair, renew, restore"></div>
+    <span class="eyebrow">Marv's Workshop</span>
+    <h1>Reference card</h1>
+    <p>A strip of known greys that goes in the photo, so the app can see what the camera has done to the colours.</p>
+  </header>
+
+  <div class="card screen-only">
+    <h2>Print it</h2>
+    <ol class="steps">
+      <li>Print this page on a colour printer, at 100% or "actual size", on plain matt paper. Glossy paper reflects light and spoils the reading.</li>
+      <li>Cut out a card. There are three on the sheet.</li>
+      <li>On the job, lay it flat beside the damage, in the same light, and take the photo close up.</li>
+      <li>In Marv's Photo Match, press "The printed card is in this photo", then tap the dark square at each end of the card.</li>
+    </ol>
+    <button class="btn-main" type="button" id="btn-print">Print the card</button>
+    <p class="banner warn">This is a test card. Office printers do not print greys exactly, so readings are approximate. A production card is printed professionally and each grey measured, then those values go into the app.</p>
+  </div>
+
+  <div class="card">
+    <div class="sheet" id="sheet"></div>
+  </div>
+</div>
+
+<script src="js/colour.js"></script>
+<script src="js/refcard.js"></script>
+<script>
+(function () {
+  "use strict";
+  var K = window.MarvCard, sheet = document.getElementById("sheet");
+  function cell(rgb, mark) {
+    var i = document.createElement("i");
+    i.style.background = "rgb(" + rgb.join(",") + ")";
+    if (mark) i.className = "mark";
+    return i;
+  }
+  for (var n = 0; n < 3; n++) {
+    var fig = document.createElement("figure"); fig.style.margin = "0";
+    var strip = document.createElement("div"); strip.className = "refcard";
+    strip.appendChild(cell(K.CARD.mark, true));
+    K.CARD.patches.forEach(function (p) { strip.appendChild(cell(p.truth)); });
+    strip.appendChild(cell(K.CARD.mark, true));
+    var cap = document.createElement("figcaption"); cap.textContent = "Magicman reference card " + K.CARD.id + ". Test print, not measured. Keep flat, clean and out of sunlight.";
+    fig.appendChild(strip); fig.appendChild(cap); sheet.appendChild(fig);
+  }
+  document.getElementById("btn-print").addEventListener("click", function () { window.print(); });
+})();
+</script>
+</body>
+</html>

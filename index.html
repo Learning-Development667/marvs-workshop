@@ -2,8 +2,15 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#13294b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Marv's Workshop">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="brand/icon-192.png">
+<link rel="apple-touch-icon" href="brand/icon-180.png">
+<script src="js/app.js"></script>
 <title>Marv's Workshop</title>
 <link rel="stylesheet" href="css/workshop.css">
 <style>
@@ -22,6 +29,7 @@
   .door small { display: inline-block; margin-bottom: 6px; font-size: 11px; font-weight: bold; letter-spacing: 0.12em; text-transform: uppercase; color: var(--green-ink); }
   .door svg { width: 24px; height: 24px; color: var(--ink-2); }
   .door.lead { background: linear-gradient(180deg, var(--navy-1) 0%, var(--navy-2) 55%, var(--navy-3) 100%) padding-box, var(--rim) border-box; color: #fff; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 14px 30px var(--rim-glow), 0 2px 4px rgba(10, 20, 40, 0.3); }
+  .version { margin: 8px 0 0; text-align: center; font-size: 12.5px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
   .door.lead span { color: rgba(255, 255, 255, 0.82); } .door.lead small { color: var(--green); } .door.lead svg { color: #fff; }
 </style>
 </head>
@@ -49,6 +57,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
     </a>
   </nav>
+  <p class="version" id="app-version">Version</p>
 </div>
 </body>
 </html>

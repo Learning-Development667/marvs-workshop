@@ -130,3 +130,80 @@
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   global.MarvMix = api;
 })(typeof window !== "undefined" ? window : globalThis);
+
+/* Suggest a mix for a colour: which colourants, and how many parts of each.
+   Builds the mix a part at a time, always adding the part that brings it closest,
+   then tidies it by trying to take a part out or move a part from one colourant
+   to another. Uses the same estimated colourant data as the game, so it is a
+   starting point to test by eye, not a formulation. */
+(function (global) {
+  "use strict";
+  var M = global.MarvMix, C = global.MarvColour || (typeof require !== "undefined" ? require("./colour.js") : null);
+  function diff(mix, target) { var c = M.mixColour(mix); return c ? C.deltaRgb(c, target) : Infinity; }
+  function clone(m) { var o = {}; for (var k in m) if (m[k] > 0) o[k] = m[k]; return o; }
+  function count(m) { return Object.keys(m).filter(function (k) { return m[k] > 0; }).length; }
+  function suggest(target, paletteName, opts) {
+    opts = opts || {};
+    var pal = (paletteName === "primaries" ? M.PRIMARIES : M.TINTS).map(function (t) { return t.id; });
+    var white = pal[0], maxColours = opts.maxColours || 5;
+    function d(w) { var c = M.mixColour(w); return c ? C.deltaRgb(c, target) : Infinity; }
+    // Pattern search on amounts: nudge each colourant up or down, keep what helps, shrink the nudge.
+    function polish(w) {
+      var best = d(w), step = 0.6;
+      for (var it = 0; it < 160 && step > 0.02; it++) {
+        var moved = false;
+        for (var k in w) {
+          [1 + step, 1 / (1 + step)].forEach(function (f) {
+            var t = clone(w); t[k] = w[k] * f; var e = d(t);
+            if (e < best - 1e-7) { w = t; best = e; moved = true; }
+          });
+        }
+        if (!moved) step *= 0.5;
+      }
+      return { w: w, e: best };
+    }
+    // Start from white with each colourant, and from pairs of colourants with white.
+    var starts = [], others = pal.slice(1);
+    others.forEach(function (a) { var s0 = {}; s0[white] = 6; s0[a] = 1; starts.push(s0); var s1 = {}; s1[a] = 1; starts.push(s1); });
+    others.forEach(function (a, i) { others.slice(i + 1).forEach(function (b) { var s2 = {}; s2[white] = 6; s2[a] = 1; s2[b] = 1; starts.push(s2); }); });
+    var best = null;
+    starts.forEach(function (s0) { var r = polish(s0); if (!best || r.e < best.e) best = r; });
+    // Widen: let every colourant in at a trace and polish again, then drop the ones that add little.
+    var wide = clone(best.w); pal.forEach(function (id) { if (!wide[id]) wide[id] = 0.02; });
+    var r2 = polish(wide); if (r2.e < best.e) best = r2;
+    for (;;) {
+      var ids = Object.keys(best.w); if (ids.length <= 1) break;
+      var cand = null;
+      ids.forEach(function (id) { var t = clone(best.w); delete t[id]; var r = polish(t); if (!cand || r.e < cand.e) cand = r; });
+      if (ids.length > maxColours || cand.e < best.e + 0.35) best = cand; else break;
+    }
+    // Whole parts. A colourant needing less than one part in 300 is left out as a trace.
+    var total = Object.keys(best.w).reduce(function (n, k) { return n + best.w[k]; }, 0);
+    for (var tk in best.w) if (best.w[tk] / total < 1 / 300 && Object.keys(best.w).length > 1) delete best.w[tk];
+    var minW = Math.min.apply(null, Object.keys(best.w).map(function (k) { return best.w[k]; }));
+    var pick = null;
+    [1, 2, 3, 4, 5, 6, 8].forEach(function (scale) {
+      var parts = {}; for (var k in best.w) parts[k] = Math.max(1, Math.round(best.w[k] / minW * scale));
+      var e = d(parts);
+      if (!pick || e < pick.e - 0.3) pick = { parts: parts, e: e };
+    });
+    var colour = M.mixColour(pick.parts);
+    return { recipe: pick.parts, colour: colour, diff: pick.e, percent: Math.max(0, Math.round(100 - pick.e * 2.5)) };
+  }
+
+  // A plain description of a colour, such as "light warm grey" or "dark muted blue".
+  function describe(rgb) {
+    var lab = C.rgbToLab(rgb), L = lab[0], a = lab[1], b = lab[2], ch = Math.hypot(a, b);
+    var h = (Math.atan2(b, a) * 180 / Math.PI + 360) % 360;
+    var light = L > 88 ? "very light" : L > 70 ? "light" : L > 45 ? "mid" : L > 25 ? "dark" : "very dark";
+    if (ch < 6) return (L > 93 ? "off-white" : L < 12 ? "near black" : light + " grey");
+    if (ch < 14) return light + " " + (a < -3 && Math.abs(b) < -a ? "green-grey" : b < -3 ? "blue-grey" : b > 3 || a > 3 ? "warm grey" : "grey");
+    var hue = h < 20 ? "pink" : h < 45 ? "red" : h < 70 ? "orange" : h < 100 ? "yellow" : h < 150 ? "green" : h < 200 ? "teal" : h < 260 ? "blue" : h < 315 ? "purple" : "pink";
+    if ((hue === "orange" || hue === "red") && L < 50) hue = "brown";
+    if (hue === "yellow" && L < 60) hue = "olive";
+    if ((hue === "orange" || hue === "yellow") && L > 65 && ch < 32) return light + " beige";
+    return light + " " + (ch < 30 ? "muted " : "") + hue;
+  }
+  M.suggest = suggest;
+  M.describe = describe;
+})(typeof window !== "undefined" ? window : globalThis);

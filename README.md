@@ -20,7 +20,9 @@ In progress. A landing screen leads to three working sections: photo matching, t
 | `play.html` | Marv's Colour Lab: mix a patch to match a 3D scene. Four levels, five jobs a round, three attempts a job, hints from MARV, scores and a leaderboard kept on the phone |
 | `js/mix.js` | Paint mixing (three-channel Kubelka-Munk), the levels, job generation, hints. Estimated tint colours, not measured |
 | `tests/mix-test.js` | Checks mixes behave like paint and every generated job can be solved. Run with `node tests/mix-test.js` |
-| `photo.html` | Marv's Photo Match: slide a reference card into the picture, tap the surface, read its corrected colour |
+| `photo.html` | Marv's Photo Match, with two tabs. Mix to a photo: read a surface's colour, corrected by the reference card if one is in the photo, then mix to it. Find the colour: tap an area and the app names the colour and suggests a mix of van tints |
+| `card.html` | The printable reference card (test print, not measured) |
+| `js/app.js` | Shared by every page: the version number shown on the home screen, and keeping the page from zooming |
 | `js/colour.js` | Colour maths: CIELAB, the ΔE2000 difference, and the camera correction fitted from the reference card |
 | `js/refcard.js` | The reference card: its patches and how it is read from a photo. Provisional until a printed card is measured |
 | `tests/colour-test.js` | Checks the maths against published reference pairs and the feasibility report's 68 photo readings. Run with `node tests/colour-test.js` |

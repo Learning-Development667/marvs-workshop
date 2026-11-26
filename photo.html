@@ -2,14 +2,42 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#13294b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Marv's Workshop">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="brand/icon-192.png">
+<link rel="apple-touch-icon" href="brand/icon-180.png">
+<script src="js/app.js"></script>
 <title>Marv's Photo Match</title>
 <link rel="stylesheet" href="css/workshop.css">
 <style>
   .photo-stage { position: relative; border-radius: 16px; overflow: hidden; background: #cfc9be; box-shadow: inset 0 0 0 1px rgba(19, 41, 75, 0.18); line-height: 0; }
   .photo-stage canvas { display: block; width: 100%; height: auto; }
-  #overlay { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+  /* a swipe over the photo scrolls the page; only a tap does anything */
+  #overlay { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: pan-y; cursor: crosshair; }
+  #overlay.placing { touch-action: none; }
+  .explain { margin: 0; font-size: 14.5px; }
+  .note a { color: var(--ink); font-weight: bold; }
+  .tabs2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 16px; background: var(--sunken); box-shadow: inset 0 2px 6px rgba(19, 41, 75, 0.14); }
+  .tabs2 button { min-height: 48px; border: 2px solid transparent; border-radius: 12px; background: transparent; font-size: 15px; font-weight: bold; color: var(--ink-2); }
+  .tabs2 button[aria-selected="true"] { color: var(--primary-ink); text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.5); background: linear-gradient(180deg, var(--navy-1), var(--navy-2) 55%, var(--navy-3)) padding-box, var(--rim) border-box; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 6px 14px var(--rim-glow); }
+  .found { display: flex; align-items: center; gap: 16px; }
+  .found .disc { width: 84px; height: 84px; }
+  .found strong { display: block; font-size: 20px; line-height: 1.25; text-transform: capitalize; }
+  .found span { display: block; font-size: 14px; color: var(--ink-2); }
+  .recipe { display: flex; flex-direction: column; }
+  .recipe .r { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 11px 0; border-top: 1px solid var(--hair); }
+  .recipe .r:first-child { border-top: 0; }
+  .recipe .r i { width: 30px; height: 30px; border-radius: 50%; box-shadow: inset 0 -4px 6px rgba(0, 0, 0, 0.25), inset 0 2px 3px rgba(255, 255, 255, 0.3), 0 0 0 2px var(--surface-1), 0 0 0 3px var(--hair); }
+  .recipe .r b { font-size: 15.5px; }
+  .recipe .r small { display: block; font-size: 12.5px; color: var(--ink-2); }
+  .recipe .r .parts { text-align: right; font-size: 19px; font-weight: bold; font-variant-numeric: tabular-nums; }
+  .recipe .r .parts span { display: block; font-size: 12px; font-weight: normal; color: var(--ink-2); }
+  .compare { display: flex; align-items: center; gap: 12px; font-size: 14px; }
+  .compare .disc { width: 44px; height: 44px; }
   .tag { position: absolute; left: 12px; top: 12px; background: rgba(12, 28, 53, 0.82); color: #fff; font-size: 13px; font-weight: bold; padding: 5px 12px; border-radius: 999px; line-height: 1.4; max-width: calc(100% - 24px); }
   .trio { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 10px; }
   .tri { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; }
@@ -30,12 +58,17 @@
     <div class="logo"><img class="on-light" src="brand/logo.svg" alt="Magicman: repair, renew, restore"><img class="on-dark" src="brand/logo-white.svg" alt="Magicman: repair, renew, restore"></div>
     <span class="eyebrow">Marv's Workshop</span>
     <h1>Marv's Photo Match</h1>
-    <p>Put the reference card on the surface, take the photo, then mix to the colour the app reads.</p>
+    <p id="intro">Put the reference card on the surface, take the photo, then mix to the colour the app reads.</p>
   </header>
+
+  <div class="tabs2" role="tablist" aria-label="What to do with the photo">
+    <button type="button" role="tab" id="tab-mix" aria-selected="true">Mix to a photo</button>
+    <button type="button" role="tab" id="tab-find" aria-selected="false">Find the colour</button>
+  </div>
 
   <div class="card">
     <h2>1. Card first, then the photo</h2>
-    <p class="note">Go up to the damage. Lay the reference card flat beside it, in the same light, then take the photo close up. Until the printed card arrives, the sample lets you slide a virtual card in before the photo is taken.</p>
+    <p class="note">Go up to the damage. Lay the reference card flat beside it, in the same light, then take the photo close up. <a href="card.html">Print the reference card</a>. To see how it works without one, try a sample.</p>
     <div class="choices">
       <button class="btn-main" type="button" id="btn-camera">Take a photo</button>
       <div class="two">
@@ -50,10 +83,7 @@
 
   <div class="card" id="work" hidden>
     <h2 id="work-title">2. Pick the surface</h2>
-    <div class="row" id="modes" hidden>
-      <button class="pill" type="button" data-mode="virtual" aria-pressed="true">Virtual card</button>
-      <button class="pill" type="button" data-mode="printed" aria-pressed="false">Printed card is in the photo</button>
-    </div>
+
     <div class="photo-stage">
       <canvas id="photo"></canvas>
       <canvas id="overlay" aria-label="The picture. Drag the reference card into place, and tap the surface to match."></canvas>
@@ -62,16 +92,32 @@
     <p class="banner plain" id="guide" aria-live="polite"></p>
     <button class="btn-main" type="button" id="btn-shoot" hidden>Take the photo</button>
     <button class="btn-quiet" type="button" id="btn-retake" hidden>Move the card and retake</button>
+    <div class="row">
+      <button class="btn-quiet" type="button" id="btn-printed" hidden>The printed card is in this photo</button>
+      <button class="btn-quiet" type="button" id="btn-clear" hidden>Mark the card again</button>
+    </div>
   </div>
 
   <div class="card" id="result" hidden aria-live="polite">
     <h2>The colour</h2>
+    <p class="explain" id="explain"></p>
     <div class="trio">
-      <div class="tri"><i class="disc" id="d-raw"></i><strong>Camera saw</strong><span id="t-raw"></span></div>
-      <div class="tri" id="tri-cor"><i class="disc" id="d-cor"></i><strong>With the card</strong><span id="t-cor"></span></div>
+      <div class="tri"><i class="disc" id="d-raw"></i><strong id="h-raw">Camera saw</strong><span id="t-raw"></span></div>
+      <div class="tri" id="tri-cor"><i class="disc" id="d-cor"></i><strong>Corrected</strong><span id="t-cor"></span></div>
       <div class="tri" id="tri-true"><i class="disc" id="d-true"></i><strong>Actual colour</strong><span id="t-true"></span></div>
     </div>
     <p class="banner" id="verdict"></p>
+    <div id="find" hidden>
+      <div class="found">
+        <i class="disc" id="f-disc"></i>
+        <div><strong id="f-name"></strong><span id="f-sub"></span></div>
+      </div>
+      <h2 style="margin-top:16px">Suggested mix</h2>
+      <p class="note">Van tints in parts. Mix them into the binder as usual.</p>
+      <div class="recipe" id="f-recipe"></div>
+      <div class="compare"><i class="disc" id="f-mixed"></i><span id="f-match"></span></div>
+      <p class="banner warn" id="f-warn">A starting point, not a formulation. It comes from estimated tint colours, so check it on a test dab and adjust by eye.</p>
+    </div>
     <button class="btn-main" type="button" id="btn-mix">Mix this colour</button>
     <p class="note" id="fit-note"></p>
     <p class="note">Difference is measured on the paint industry's scale. Under 1 cannot be seen, 1 to 2 is a match to a trained eye, and over 5 is plainly a different colour.</p>
@@ -82,6 +128,7 @@
 
 <script src="js/colour.js"></script>
 <script src="js/refcard.js"></script>
+<script src="js/mix.js"></script>
 <script>
 (function () {
   "use strict";
@@ -90,12 +137,26 @@
   var photo = $("photo"), overlay = $("overlay");
   var pctx = photo.getContext("2d", { willReadFrequently: true }), octx = overlay.getContext("2d");
   var MAX_SIDE = 1400;
-  var mode = "virtual";            // "virtual": the app draws the card. "printed": a real card is in the photo.
+  var mode = "none";               // "none": no card in a real photo. "printed": a real card is in it. "virtual": a sample's card.
   var card = { a: null, b: null }; // the card's two end marks, in image pixels
   var spot = null;                 // the surface point to read
   var sample = null;               // a made-up sample: { base, truth, cast, taken }
   var drag = null, answer = null;  // answer: { target, fit } once a colour has been read
   var spotAuto = false;            // true while the reading spot is the one the app chose
+  var purpose = "mix";             // "mix": mix to the photo yourself. "find": the app names the colour and suggests tints.
+  var M = window.MarvMix;
+  function setPurpose(p) {
+    purpose = p;
+    $("tab-mix").setAttribute("aria-selected", String(p === "mix"));
+    $("tab-find").setAttribute("aria-selected", String(p === "find"));
+    $("intro").textContent = p === "mix"
+      ? "Put the reference card on the surface, take the photo, then mix to the colour the app reads."
+      : "Take a photo, tap the area you want, and the app tells you the colour and which van tints to use.";
+    try { history.replaceState(null, "", p === "find" ? "#find" : "#mix"); } catch (e) { /* not allowed here */ }
+    compute();
+  }
+  $("tab-mix").addEventListener("click", function () { setPurpose("mix"); });
+  $("tab-find").addEventListener("click", function () { setPurpose("find"); });
 
   // ── Loading a real photo ──
   function fit(w, h) { var k = Math.min(1, MAX_SIDE / Math.max(w, h)); return [Math.round(w * k), Math.round(h * k)]; }
@@ -112,16 +173,17 @@
   }
   function setMode(m) {
     mode = m;
-    document.querySelectorAll("#modes .pill").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.mode === m)); });
     card = m === "virtual" ? defaultCard() : { a: null, b: null };
     spot = null; spotAuto = false; answer = null; $("result").hidden = true;
-    if (m === "virtual" && !sample) { spot = autoSpot(); spotAuto = !!spot; }
+    if (m === "none") { spot = autoSpot(); spotAuto = !!spot; }
+    $("btn-printed").hidden = !!sample;
+    $("btn-printed").textContent = m === "printed" ? "There is no card in this photo" : "The printed card is in this photo";
+    $("btn-clear").hidden = m !== "printed";
     redraw(); guide(); compute();
   }
   function begin() {
     $("work").hidden = false; $("result").hidden = true; $("load-error").hidden = true;
-    $("modes").hidden = !!sample;
-    setMode("virtual");
+    setMode(sample ? "virtual" : "none");
     if (sample) bake();
     stage();
     $("work").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -159,7 +221,8 @@
   $("btn-file").addEventListener("click", function () { $("in-file").click(); });
   $("in-camera").addEventListener("change", function (e) { loadFile(e.target.files[0]); e.target.value = ""; });
   $("in-file").addEventListener("change", function (e) { loadFile(e.target.files[0]); e.target.value = ""; });
-  $("modes").addEventListener("click", function (e) { var b = e.target.closest("[data-mode]"); if (b) setMode(b.dataset.mode); });
+  $("btn-printed").addEventListener("click", function () { setMode(mode === "printed" ? "none" : "printed"); });
+  $("btn-clear").addEventListener("click", function () { setMode("printed"); });
 
   // ── The sample: a 3D scene you put the card into, then "photograph" ──
   // Each camera shift changes balance and brightness like a phone would, lifts the shadows, and boosts colour.
@@ -272,6 +335,7 @@
     $("work-title").textContent = before ? "2. Place the reference card" : (sample ? "3. Pick the surface" : "2. Pick the surface");
     $("btn-shoot").hidden = !before;
     $("btn-retake").hidden = !(sample && sample.taken);
+    overlay.classList.toggle("placing", before);
     if (sample) {
       $("tag").textContent = before ? "Sample: " + sample.name + ", before the photo" : "Photo taken in " + sample.cast.name;
       $("tag").hidden = false;
@@ -307,45 +371,42 @@
     return best;
   }
   function cardLocked() { return !!sample && sample.taken; }        // once photographed, the card is part of the picture
+  var press = null;
   overlay.addEventListener("pointerdown", function (e) {
     var p = point(e);
-    if (mode === "virtual") {
-      if (!cardLocked() && onCard(p)) drag = { kind: "card", ox: p.x - card.a.x, oy: p.y - card.a.y, len: { x: card.b.x - card.a.x, y: card.b.y - card.a.y } };
-      else if (sample && !sample.taken) return;                      // the surface is picked after the photo
-      else if (onCard(p)) { $("guide").textContent = "That is the reference card. Tap the surface you want to match."; return; }
-      else { spot = p; drag = { kind: "s" }; }
-    } else {
-      var hit = nearestMark(p);
-      if (!hit) { hit = !card.a ? "a" : !card.b ? "b" : "s"; }
-      if (hit === "s") spot = p; else card[hit] = p;
-      drag = { kind: hit };
+    press = { x: e.clientX, y: e.clientY, p: p };
+    if (mode === "virtual" && !cardLocked() && onCard(p)) {
+      drag = { kind: "card", ox: p.x - card.a.x, oy: p.y - card.a.y, len: { x: card.b.x - card.a.x, y: card.b.y - card.a.y } };
+      try { overlay.setPointerCapture(e.pointerId); } catch (err) { /* older browsers */ }
     }
-    try { overlay.setPointerCapture(e.pointerId); } catch (err) { /* older browsers */ }
-    redraw();
   });
   overlay.addEventListener("pointermove", function (e) {
     if (!drag) return;
     var p = point(e);
-    if (drag.kind === "card") {
-      card.a = { x: p.x - drag.ox, y: p.y - drag.oy };
-      card.b = { x: card.a.x + drag.len.x, y: card.a.y + drag.len.y };
-      clampCard();
-    } else if (drag.kind === "s") spot = p;
-    else card[drag.kind] = p;
-    redraw();
+    card.a = { x: p.x - drag.ox, y: p.y - drag.oy };
+    card.b = { x: card.a.x + drag.len.x, y: card.a.y + drag.len.y };
+    clampCard(); redraw();
   });
-  function drop() {
-    if (!drag) return;
-    var kind = drag.kind; drag = null;
-    if (kind === "s") spotAuto = false;
-    else if (!(sample && !sample.taken) && (!spot || spotAuto) && card.a && card.b) { spot = autoSpot(); spotAuto = !!spot; }
+  function drop(e) {
+    if (drag) { drag = null; press = null; redraw(); guide(); return; }
+    var pr = press; press = null;
+    if (!pr || e.type === "pointercancel") return;                       // the page scrolled
+    if (Math.hypot(e.clientX - pr.x, e.clientY - pr.y) > 12) return;     // a swipe, not a tap
+    tap(pr.p);
+  }
+  function tap(p) {
+    if (sample && !sample.taken) return;                                  // the surface is picked after the photo
+    if (mode === "printed" && !card.a) card.a = p;
+    else if (mode === "printed" && !card.b) { card.b = p; spot = autoSpot(); spotAuto = !!spot; }
+    else if (onCard(p)) { $("guide").textContent = "That is the reference card. Tap the surface you want to match."; return; }
+    else { spot = p; spotAuto = false; }
     redraw(); guide(); compute();
   }
   /* Choose where to read the surface. The card lies on the surface next to the damage,
      so the app looks at patches along both sides of the card and takes the most even
      one, passing over glare, deep shadow and anything off the edge of the picture. */
   function autoSpot() {
-    if (!(card.a && card.b)) return null;
+    if (!(card.a && card.b)) return centreSpot();
     var ax = card.a.x, ay = card.a.y, bx = card.b.x, by = card.b.y, len = Math.hypot(bx - ax, by - ay);
     if (len < 20) return null;
     var nx = -(by - ay) / len, ny = (bx - ax) / len, pitch = len / (K.CARD.patches.length + 1);
@@ -384,6 +445,24 @@
     cands.sort(function (p, q) { return q.votes - p.votes || (q.near - p.near) || p.sd - q.sd; });
     return { x: cands[0].x, y: cands[0].y };
   }
+  // No card: the photo is a close-up of the damage, so read the colour most of the area round the middle shares.
+  function centreSpot() {
+    if (!photo.width) return null;
+    var w = photo.width, h = photo.height, m = Math.min(w, h), size = Math.round(surfaceSize() * 1.5), cands = [];
+    [0.2, 0.3].forEach(function (rf) { for (var k = 0; k < 12; k++) {
+      var a = k / 12 * Math.PI * 2, x = w / 2 + Math.cos(a) * m * rf, y = h / 2 + Math.sin(a) * m * rf;
+      if (x < size || y < size || x > w - size || y > h - size) continue;
+      var px = pctx.getImageData(Math.round(x - size / 2), Math.round(y - size / 2), size, size).data, n = 0, sum = 0, sq = 0, c = [0, 0, 0];
+      for (var i = 0; i < px.length; i += 16) { var l = 0.3 * px[i] + 0.59 * px[i + 1] + 0.11 * px[i + 2]; sum += l; sq += l * l; c[0] += px[i]; c[1] += px[i + 1]; c[2] += px[i + 2]; n++; }
+      var mean = sum / n;
+      if (mean < 12 || mean > 248) continue;
+      cands.push({ x: x, y: y, rgb: [c[0] / n, c[1] / n, c[2] / n], sd: Math.sqrt(Math.max(0, sq / n - mean * mean)) });
+    } });
+    if (!cands.length) return { x: w / 2, y: h / 2 };
+    cands.forEach(function (c) { c.votes = cands.filter(function (o) { return Math.abs(o.rgb[0] - c.rgb[0]) + Math.abs(o.rgb[1] - c.rgb[1]) + Math.abs(o.rgb[2] - c.rgb[2]) < 48; }).length; });
+    cands.sort(function (p, q) { return q.votes - p.votes || p.sd - q.sd; });
+    return { x: cands[0].x, y: cands[0].y };
+  }
   // How far the damage reaches from its centre in a sample picture, found by its colour.
   function measureDamage(ctx, cx, cy) {
     var w = ctx.canvas.width, h = ctx.canvas.height, d = ctx.getImageData(0, 0, w, h).data;
@@ -406,13 +485,11 @@
   function guide() {
     var g = $("guide");
     if (sample && !sample.taken) g.textContent = "Slide the reference card next to the damage, then take the photo.";
-    else if (spot && spotAuto) g.textContent = "The app read an even patch of the surface beside the card, marked by the square. Tap somewhere else if that is the wrong surface.";
-    else if (sample) g.textContent = spot ? "Reading from the square you placed. Tap somewhere else to move it." : "The photo is taken. Tap the surface you want to match.";
-    else if (mode === "virtual") g.textContent = spot ? "Reading from the square you placed. Tap somewhere else to move it." : "Tap the surface you want to match, close to the damage.";
-    else if (!card.a) g.textContent = "Tap the dot at one end of the printed card.";
-    else if (!card.b) g.textContent = "Now tap the dot at the other end.";
-    else if (!spot) g.textContent = "Tap the surface you want to match, close to the damage.";
-    else g.textContent = "Reading from the square you placed. Drag any mark to adjust it.";
+    else if (mode === "printed" && !card.a) g.textContent = "Tap the dark square at one end of the printed card.";
+    else if (mode === "printed" && !card.b) g.textContent = "Now tap the dark square at the other end.";
+    else if (spot && spotAuto) g.textContent = "The square shows where the app read the surface. If that is the wrong surface, tap the right one.";
+    else if (spot) g.textContent = "Reading from where you tapped. Tap somewhere else to move it.";
+    else g.textContent = "Tap the surface you want to match, close to the damage.";
   }
   function redraw() {
     var w = overlay.width, h = overlay.height, u = Math.max(2, w / 400);
@@ -449,19 +526,23 @@
     var raw = K.readSquare(pctx, spot.x, spot.y, surfaceSize());
     var v = $("verdict"), note = $("fit-note");
     $("d-raw").style.background = C.toHex(raw);
-    var canCorrect = mode === "printed" || !!sample;
+    var canCorrect = mode !== "none";
     $("tri-cor").hidden = !canCorrect;
     $("tri-true").hidden = !sample;
+    $("h-raw").textContent = canCorrect ? "Camera saw" : "Your photo's colour";
 
     if (!canCorrect) {
-      $("t-raw").textContent = "not corrected";
-      v.className = "banner warn";
-      v.textContent = "This reading is not corrected.";
-      note.textContent = "The virtual card shows where the printed card will go. It has not been through your camera, so it cannot tell the app what the camera changed. You can still mix to the colour the camera saw.";
+      $("explain").textContent = "This is the colour as your camera recorded it.";
+      $("t-raw").textContent = "as the camera recorded it";
+      v.className = "banner plain";
+      v.textContent = "There is no reference card in this photo, so the light may have shifted the colour a little.";
+      note.innerHTML = 'For a corrected reading, <a href="card.html">print the reference card</a>, lay it beside the damage and take the photo again.';
       answer = { target: raw, fit: null };
       $("result").hidden = false;
+      showFind();
       return;
     }
+    $("explain").textContent = "Cameras shift colours with the light. The card's greys are known, so the app measures that shift and takes it back out.";
     var read = K.readCard(pctx, card.a, card.b), cor = read.fit.apply(raw);
     $("d-cor").style.background = C.toHex(cor);
     if (sample) {
@@ -475,7 +556,7 @@
       else { v.className = "banner warn"; v.textContent = "The card did not help here: " + e0.toFixed(1) + " before, " + e1.toFixed(1) + " after. Retake with the card on an evenly lit part of the picture."; }
     } else {
       $("t-raw").textContent = "before correction";
-      $("t-cor").textContent = "the surface's colour";
+      $("t-cor").textContent = "the surface's true colour";
       v.className = "banner plain";
       v.textContent = "The card shifted the reading by " + C.deltaRgb(raw, cor).toFixed(1) + ".";
     }
@@ -483,9 +564,35 @@
       ? "The camera could not tell enough of the card's patches apart, so only a white balance was applied."
       : "Corrected using " + read.fit.used + " of the card's " + read.fit.total + " patches.")
       + (sample ? " Sample photos are simulated. Real photos in the feasibility tests came out between 4 and 10, so a phone will not reach repair accuracy yet."
-                : " Card " + K.CARD.id + ": " + K.CARD.status);
+                : " The card's greys are taken at their design values until a printed card is measured.");
     answer = { target: cor, fit: read.fit };
     $("result").hidden = false;
+    showFind();
+  }
+  // The Find the colour tab: name the colour and suggest a mix of van tints for it.
+  function showFind() {
+    var on = purpose === "find" && !!answer;
+    $("find").hidden = !on;
+    $("btn-mix").className = on ? "btn-quiet" : "btn-main";
+    $("btn-mix").textContent = on ? "Mix it yourself instead" : "Mix this colour";
+    if (!on) return;
+    var target = answer.target, s = M.suggest(target, "tints");
+    $("f-disc").style.background = C.toHex(target);
+    $("f-name").textContent = M.describe(target);
+    $("f-sub").textContent = (answer.fit ? "Corrected with the reference card. " : "As the camera recorded it. ") + C.toHex(target).toUpperCase();
+    var box = $("f-recipe"); box.textContent = "";
+    var total = Object.keys(s.recipe).reduce(function (n, k) { return n + s.recipe[k]; }, 0);
+    Object.keys(s.recipe).sort(function (a, b) { return s.recipe[b] - s.recipe[a]; }).forEach(function (id) {
+      var t = M.tint(id), row = document.createElement("div"); row.className = "r";
+      var dot = document.createElement("i"); dot.style.background = C.toHex(t.rgb);
+      var nm = document.createElement("div"); var b = document.createElement("b"); b.textContent = t.name; nm.appendChild(b);
+      if (t.strong) { var sm = document.createElement("small"); sm.textContent = "Very strong: add carefully"; nm.appendChild(sm); }
+      var pt = document.createElement("div"); pt.className = "parts"; pt.textContent = s.recipe[id] + (s.recipe[id] === 1 ? " part" : " parts");
+      var pc = document.createElement("span"); pc.textContent = Math.round(s.recipe[id] / total * 100) + "% of the mix"; pt.appendChild(pc);
+      row.appendChild(dot); row.appendChild(nm); row.appendChild(pt); box.appendChild(row);
+    });
+    $("f-mixed").style.background = C.toHex(s.colour);
+    $("f-match").textContent = "On paper this mix comes out at a " + s.percent + "% match (a difference of " + s.diff.toFixed(1) + ").";
   }
 
   // ── Hand the colour and the picture to the mixing screen ──
@@ -514,6 +621,7 @@
     }
     location.href = "play.html#photo";
   });
+  if (location.hash === "#find") setPurpose("find");
 })();
 </script>
 </body>

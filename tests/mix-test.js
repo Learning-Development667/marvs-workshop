@@ -36,4 +36,19 @@ ok('a scene can ask for a pale colour', lab(pale.target)[0] > 75, hex(pale.targe
 const tgt = M.mixColour({ TWX: 10, LBX: 1, PBX: 1 });
 console.log('hint examples:', JSON.stringify([M.hint({}, tgt), M.hint({ TWX: 10 }, tgt), M.hint({ TWX: 10, LBX: 2 }, tgt), M.hint({ TWX: 10, LBX: 1, PBX: 1 }, tgt)]));
 ok('a too-light mix is told to go darker', /darker/.test(M.hint({ TWX: 10 }, tgt)));
+// suggest(): can it find a mix for colours made from a hidden recipe?
+{
+  let seed2 = 99; const r2 = () => (seed2 = (seed2 * 16807) % 2147483647) / 2147483647;
+  let within = 0, worst = 0, sumd = 0; const n = 60, t0 = Date.now();
+  for (let i = 0; i < n; i++) {
+    const job = M.makeJob('technician', null, r2);
+    const s = M.suggest(job.target, 'tints');
+    worst = Math.max(worst, s.diff); sumd += s.diff; if (s.diff <= 4.8) within++;
+    if (Object.keys(s.recipe).length > 5) { fail++; console.log('FAIL more than five colourants'); }
+  }
+  ok('suggest finds a Technician-level match for most made-up colours', within >= n * 0.85, within + ' of ' + n + ' within the Technician pass mark, mean diff ' + (sumd / n).toFixed(2) + ', worst ' + worst.toFixed(1) + ', ' + Math.round((Date.now() - t0) / n) + ' ms each');
+  const grey = M.suggest([128, 128, 128], 'tints');
+  ok('a mid grey comes out as white and black', grey.recipe.TWX > 0 && grey.recipe.LBX > 0, M.recipeText(grey.recipe) + ' -> ' + C.toHex(grey.colour) + ', ' + M.describe([128, 128, 128]));
+  console.log('describe:', ['#383e42', '#f1ece1', '#17443c', '#c9b896', '#6b1c23', '#1a2b3c', '#e6d2b5', '#8c9c92'].map(h => h + ' ' + M.describe(C.fromHex(h))).join(' | '));
+}
 console.log(fail ? 'FAILED: ' + fail : 'All checks passed'); process.exit(fail ? 1 : 0);
