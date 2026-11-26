@@ -9,6 +9,7 @@
 <style>
   .stage { position: relative; border-radius: 16px; overflow: hidden; background: #cfc9be; box-shadow: inset 0 0 0 1px rgba(19, 41, 75, 0.18); }
   .stage canvas { display: block; width: 100%; aspect-ratio: 4 / 3; cursor: grab; }
+  .stage #photo-view { aspect-ratio: auto; height: auto; cursor: default; }
   .stage-label { position: absolute; left: 12px; top: 12px; background: rgba(12, 28, 53, 0.82); color: #fff; font-size: 13px; font-weight: bold; padding: 5px 12px; border-radius: 999px; }
   .fail { padding: 28px 18px; text-align: center; color: #13294b; margin: 0; }
   .zoomer { position: absolute; left: 12px; bottom: 12px; display: flex; gap: 8px; }
@@ -130,6 +131,7 @@
     </div>
     <div class="stage">
       <canvas id="stage" aria-label="3D scene. Drag to turn it, pinch to zoom."></canvas>
+      <canvas id="photo-view" aria-label="Your photo, with the patch you are mixing" hidden></canvas>
       <span class="stage-label" id="stage-label"></span>
       <div class="zoomer" id="zoomer"><button class="zb" type="button" id="zoom-out" aria-label="Zoom out">&minus;</button><button class="zb" type="button" id="zoom-in" aria-label="Zoom in">+</button></div>
       <p class="fail" id="fail" hidden>This browser could not start 3D graphics, so the scene cannot be shown. You can still mix against the two colour discs below.</p>
@@ -170,7 +172,7 @@
     <button class="btn-quiet" type="button" id="btn-skip">Skip this job</button>
   </div>
 
-  <div class="card">
+  <div class="card" id="board-card">
     <h2>Leaderboard</h2>
     <label class="field" for="player">Your name, for the board
       <input id="player" type="text" maxlength="24" autocomplete="nickname" placeholder="Type your name">
@@ -203,6 +205,31 @@
 
   var st = { level: "trainee", job: null, sceneId: null, spot: 0, mix: {}, attempt: 1, hints: 0, score: 0, done: 0, over: false, finished: false };
   var viewer = null, cans = {};
+  // A job handed over from "Match from a photo": mix to the colour read from the technician's own picture.
+  var photoJob = null, pimg = null;
+  if (location.hash === "#photo") { try { photoJob = JSON.parse(sessionStorage.getItem("marvs-photo-job") || "null"); } catch (e) { photoJob = null; } }
+  function drawPhoto(hex) {
+    var pv = $("photo-view");
+    if (!pimg || !pimg.naturalWidth) return;
+    if (pv.width !== pimg.naturalWidth) { pv.width = pimg.naturalWidth; pv.height = pimg.naturalHeight; }
+    var x = pv.getContext("2d"); x.drawImage(pimg, 0, 0);
+    if (!hex) return;
+    var cx = photoJob.spot.x * pv.width, cy = photoJob.spot.y * pv.height, r = Math.min(pv.width, pv.height) * 0.07;
+    x.fillStyle = hex; x.beginPath();
+    for (var i = 0; i <= 28; i++) { var a = i / 28 * Math.PI * 2, rr = r * (1 + 0.17 * Math.sin(a * 3 + 1) + 0.09 * Math.sin(a * 7 + 0.4)); x.lineTo(cx + Math.cos(a) * rr * 1.3, cy + Math.sin(a) * rr); }
+    x.closePath(); x.fill();
+  }
+  function newPhotoJob() {
+    st.job = { target: photoJob.target, recipe: null };
+    st.sceneId = null; st.mix = {}; st.attempt = 1; st.hints = 0; st.over = false;
+    $("stage-label").textContent = "Your photo";
+    $("job-title").textContent = "From your photo";
+    $("job-sub").textContent = photoJob.corrected ? "Colour read with the reference card" : "Colour as the camera saw it";
+    $("d-target").style.background = C.toHex(st.job.target);
+    $("result").hidden = true; $("btn-next").hidden = true; $("btn-level").hidden = true; $("bench").hidden = false;
+    say("focussed", "Mix until the patch on your photo disappears. Ask me whenever you like.");
+    renderMix(); renderStatus();
+  }
 
   // ── Storage (this phone only) ──
   function load(key, fallback) { try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; } }
@@ -213,7 +240,7 @@
 
   function say(pose, text) { $("marv-img").src = "brand/marv/" + pose + ".jpg"; $("marv-say").textContent = text; }
   function meta(id) { return MarvScenes.list.filter(function (s) { return s.id === id; })[0]; }
-  function lv() { return M.level(st.level); }
+  function lv() { var l = M.level(st.level); return photoJob ? Object.assign({}, l, { hints: Infinity, hintCost: 0 }) : l; }
 
   // ── Round and job ──
   function newRound() {
@@ -221,6 +248,7 @@
     newJob();
   }
   function newJob() {
+    if (photoJob) return newPhotoJob();
     var list = MarvScenes.list, id = list[Math.floor(Math.random() * list.length)].id;
     while (list.length > 1 && id === st.sceneId) id = list[Math.floor(Math.random() * list.length)].id;
     var range = LIGHTNESS[id];
@@ -244,9 +272,9 @@
     renderMix(); renderStatus(); syncZoom();
   }
   function renderStatus() {
-    $("s-job").textContent = Math.min(st.done + 1, JOBS) + " of " + JOBS;
-    $("s-attempt").textContent = Math.min(st.attempt, ATTEMPTS) + " of " + ATTEMPTS;
-    $("s-score").textContent = String(st.score);
+    $("s-job").textContent = photoJob ? "Photo" : Math.min(st.done + 1, JOBS) + " of " + JOBS;
+    $("s-attempt").textContent = photoJob ? String(st.attempt) : Math.min(st.attempt, ATTEMPTS) + " of " + ATTEMPTS;
+    $("s-score").textContent = photoJob ? "\u2013" : String(st.score);
     var left = lv().hints === Infinity ? null : Math.max(0, lv().hints - st.hints);
     $("btn-hint").hidden = lv().hints === 0;
     $("btn-hint").disabled = left === 0;
@@ -276,9 +304,10 @@
     disc.classList.toggle("empty", !c);
     disc.style.background = c ? C.toHex(c) : "";
     if (viewer && !st.over) viewer.setPatch(c ? C.toHex(c) : BARE);
+    if (photoJob && !st.over) drawPhoto(c ? C.toHex(c) : BARE);
     $("check-msg").hidden = true;
     // Trainees see how close they are as they mix. Higher levels judge by eye, then check.
-    var live = st.level === "trainee" && !!c && !st.over, pass = Math.round(100 - lv().maxDiff * 2.5);
+    var live = (st.level === "trainee" || !!photoJob) && !!c && !st.over, pass = Math.round(100 - lv().maxDiff * 2.5);
     $("meter").hidden = !live;
     if (live) {
       var now = M.judge(st.mix, st.job.target, st.level);
@@ -309,16 +338,28 @@
     if (!M.drops(st.mix)) { say("wincing", "There is nothing in the pot yet. Add some drops first."); return; }
     var j = M.judge(st.mix, st.job.target, st.level);
     if (j.match) return endJob(true, j);
-    if (st.attempt >= ATTEMPTS) return endJob(false, j);
+    if (!photoJob && st.attempt >= ATTEMPTS) return endJob(false, j);
     st.attempt += 1;
     var need = Math.round(100 - lv().maxDiff * 2.5), left = ATTEMPTS - st.attempt + 1;
     var msg = $("check-msg");
-    msg.textContent = "Not a match yet. You are at " + j.percent + "% and " + lv().name + " needs " + need + "%. " + left + (left === 1 ? " attempt" : " attempts") + " left.";
+    msg.textContent = "Not a match yet. You are at " + j.percent + "% and " + lv().name + " needs " + need + "%." + (photoJob ? "" : " " + left + (left === 1 ? " attempt" : " attempts") + " left.");
     msg.hidden = false; msg.scrollIntoView({ block: "nearest", behavior: "smooth" });
-    say("disappointed", st.level === "trainee" ? M.hint(st.mix, st.job.target) : "Not there yet. Have another look and adjust.");
+    say("disappointed", (st.level === "trainee" || photoJob) ? M.hint(st.mix, st.job.target) : "Not there yet. Have another look and adjust.");
     renderStatus();
   }
   function endJob(matched, j, skipped) {
+    if (photoJob) {
+      st.over = true;
+      var pr = $("result");
+      pr.className = "banner pass";
+      pr.textContent = "Matched at " + j.percent + "%. Like it never happened. Your mix: " + M.recipeText(st.mix) + ".";
+      pr.hidden = false; $("meter").hidden = true; $("check-msg").hidden = true;
+      drawPhoto(null);
+      say("triumphant", "That is the colour. Note the mix down so the next job starts there.");
+      $("btn-next").textContent = "Match another photo"; $("btn-next").hidden = false; $("btn-level").hidden = false; $("bench").hidden = true;
+      pr.scrollIntoView({ block: "center", behavior: "smooth" });
+      return;
+    }
     st.over = true; st.done += 1;
     var r = $("result"), gained = 0;
     if (matched) {
@@ -406,6 +447,7 @@
     renderStatus();
   });
   $("btn-next").addEventListener("click", function () {
+    if (photoJob) { location.href = "photo.html"; return; }
     if (st.finished) newRound(); else newJob();
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
@@ -415,8 +457,19 @@
     $("zoom-out").disabled = z <= 1.001; $("zoom-in").disabled = z >= 3.39;
   }
 
-  try { viewer = MarvScenes.createViewer($("stage"), { onZoom: syncZoom }); }
-  catch (err) { $("stage").hidden = true; $("stage-label").hidden = true; $("zoomer").hidden = true; $("fail").hidden = false; }
+  if (photoJob) {
+    $("stage").hidden = true; $("zoomer").hidden = true; $("photo-view").hidden = false;
+    $("btn-skip").hidden = true; $("board-card").hidden = true;
+    document.querySelector("header h1").textContent = "Mix to your photo";
+    document.querySelector("header p").textContent = "Mix until the patch on your photo disappears into the surface.";
+    document.querySelector("a.back").setAttribute("href", "photo.html");
+    document.querySelector("a.back").lastChild.textContent = "Back to the photo";
+    pimg = new Image(); pimg.onload = function () { renderMix(); }; pimg.src = photoJob.image;
+    st.level = "technician";
+  } else {
+    try { viewer = MarvScenes.createViewer($("stage"), { onZoom: syncZoom }); }
+    catch (err) { $("stage").hidden = true; $("stage-label").hidden = true; $("zoomer").hidden = true; $("fail").hidden = false; }
+  }
   if (viewer) {
     viewer.resize();
     window.addEventListener("resize", function () { viewer.resize(); });
